@@ -1,9 +1,19 @@
 use std::env;
 use std::path::PathBuf;
+use serde_derive::{Deserialize};
 
+use crate::io_utils::slurp;
+use crate::error::Result;
+
+#[derive(Deserialize)]
+#[serde(default)]
+#[serde(rename_all = "camelCase")]
 pub struct Config {
-    /// Folders on Disk
+    /// The root folder of the project
+    #[serde(skip)]
     pub root: PathBuf,
+
+    /// Folders on Disk
     pub posts_folder: String,
     pub output_folder: String,
     pub public_folder: String,
@@ -29,6 +39,21 @@ impl Config {
         let mut config: Config = Default::default();
         config.root = folder.as_ref().to_path_buf();
         config
+    }
+
+    pub fn toml(input: &str, in_folder: &PathBuf) -> Result<Config> {
+        let mut config: Config = toml::from_str(&input)?;
+        config.root = in_folder.clone();
+        Ok(config)
+    }
+
+    pub fn file<A: AsRef<std::path::Path>>(toml_file: A) -> Result<Config> {
+        let parent = match &toml_file.as_ref().parent() {
+            Some(root) => root.to_path_buf(),
+            None => panic!("The toml file {:?} is invalid. No Parent Folder.", &toml_file.as_ref())
+        };
+        let contents = slurp(toml_file)?;
+        Config::toml(&contents, &parent)
     }
 
     pub fn posts_folder_path(&self) -> PathBuf {
@@ -71,5 +96,20 @@ impl Default for Config {
             date_time_format: "%Y-%m-%d %H:%M:%S".to_string(),
             output_date_time_format: "%Y-%m-%d %H:%M:%S".to_string()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_from_toml() {
+        use crate::config::Config;
+        let contents = r#"
+postsFolder = "jochen/"
+outputFolder = "franz/"
+"#;
+        let parsed = Config::toml(&contents, &std::path::PathBuf::from("/tmp/test.toml")).unwrap();
+        assert_eq!(parsed.posts_folder, "jochen/");
+
     }
 }

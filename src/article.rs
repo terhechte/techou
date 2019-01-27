@@ -3,6 +3,7 @@ use std::path::Path;
 use crate::front_matter::{parse_front_matter, FrontMatter};
 use crate::error::{Result, Error};
 use crate::config::Config;
+use crate::utils;
 
 use chrono::Datelike;
 use pulldown_cmark::{Event, Parser, Tag, html};
@@ -10,6 +11,7 @@ use serde_derive::{Serialize};
 
 #[derive(Serialize, Debug)]
 pub struct Article {
+    pub identifier: String,
     pub filename: String,
     pub info: FrontMatter,
     pub slug: String,
@@ -22,10 +24,11 @@ impl Article {
         let filename = path.as_ref().file_name().and_then(|e| e.to_str())
             .ok_or(Error::Other(format!("Path {:?} has no filename. Can't read it.", path.as_ref())))?
             .to_string();
+        let identifier = utils::hash_string(&filename, 8);
         let (info, article) = parse_front_matter(&contents, &path.as_ref(), &config)?;
         let slug = slug_from_frontmatter(&info);
         let ParseResult { content, sections } = markdown_to_html(article);
-        Ok(Article { filename, info, slug, content, sections } )
+        Ok(Article { identifier, filename, info, slug, content, sections } )
     }
 }
 

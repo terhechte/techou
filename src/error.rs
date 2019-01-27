@@ -5,6 +5,7 @@ use std::result;
 
 use tera;
 use fs_extra;
+use toml;
 
 #[derive(Debug)]
 pub enum Error {
@@ -40,6 +41,10 @@ impl From<tera::Error> for Error {
 
 impl From<fs_extra::error::Error> for Error {
     fn from(error: fs_extra::error::Error) -> Self { Error::Other(format!("Copy Error: {:?}", &error)) }
+}
+
+impl From<toml::de::Error> for Error {
+    fn from(error: toml::de::Error) -> Self { Error::Other(format!("Could not parse toml: {:?}", &error)) }
 }
 
 pub type Result<T> = result::Result<T, Error>;

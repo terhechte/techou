@@ -66,14 +66,15 @@ pub fn copy_items_to_directory<A: AsRef<Path>>(items: &Vec<String>, from_dir: A,
     let mut options = fs_extra::dir::CopyOptions::new();
     options.copy_inside = true;
     options.overwrite = true;
-    let mut source_paths = Vec::new();
     for entry in items {
         let path = from_dir.as_ref().join(entry);
-        match path.exists() {
-            true => source_paths.push(path),
-            false => println!("Could not find path {:?}", &entry)
+        if !path.exists() {
+                println!("Could not find path {:?}", &entry);
+                continue
         };
+        println!("copy '{:?}' to '{:?}'", &path, &to_dir.as_ref());
+        // We copy each item seperately, so we can see when it fails
+        fs_extra::copy_items(&vec![&path], &to_dir, &options)?;
     }
-    fs_extra::copy_items(&source_paths, to_dir, &options)?;
     Ok(())
 }
