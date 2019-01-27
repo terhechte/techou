@@ -1,0 +1,131 @@
+use std::collections::HashMap;
+use std::path::Path;
+use crate::front_matter::{parse_front_matter, FrontMatter};
+use crate::error::{Result, Error};
+use crate::config::Config;
+
+use chrono::Datelike;
+use pulldown_cmark::{Event, Parser, Tag, html};
+use serde_derive::{Serialize};
+
+#[derive(Serialize, Debug)]
+pub struct Article {
+    pub filename: String,
+    pub info: FrontMatter,
+    pub slug: String,
+    pub content: String,
+    pub sections: Vec<(i32, String)>
+}
+
+impl Article {
+    pub fn new<A: AsRef<Path>>(contents: &str, path: A, config: &Config) -> Result<Article> {
+        let filename = path.as_ref().file_name().and_then(|e| e.to_str())
+            .ok_or(Error::Other(format!("Path {:?} has no filename. Can't read it.", path.as_ref())))?
+            .to_string();
+        let (info, article) = parse_front_matter(&contents, &path.as_ref(), &config)?;
+        let slug = slug_from_frontmatter(&info);
+        let ParseResult { content, sections } = markdown_to_html(article);
+        Ok(Article { filename, info, slug, content, sections } )
+    }
+}
+
+fn slug_from_frontmatter(front_matter: &FrontMatter) -> String {
+    // make lowercase ascii-only title
+    let title: String = front_matter.title.to_lowercase()
+        .replace(|c: char| !c.is_ascii_alphanumeric() && !c.is_ascii_whitespace(), "")
+        .split_whitespace().collect::<Vec<&str>>().join("-");
+    let d = &front_matter.date;
+    format!("{}-{}-{}-{}.html", d.year(), d.month(), d.day(), title)
+}
+
+struct ParseResult {
+    pub content: String,
+    pub sections: Vec<(i32, String)>
+}
+
+trait EventHandler {
+    fn handle(&mut self, event: &Event, result: &mut ParseResult, events: &mut Vec<Event>) -> bool;
+}
+
+struct SectionEventHandler {
+    next_text_is_section: bool
+}
+
+impl EventHandler for SectionEventHandler {
+    fn handle(&mut self, event: &Event, result: &mut ParseResult, events: &mut Vec<Event>) -> bool {
+        match &event {
+            &Event::Start(Tag::Header(_)) => {
+                self.next_text_is_section = true;
+            }
+            &Event::Text(ref text) if self.next_text_is_section => {
+                result.sections.push(((result.sections.len() as i32) + 1, text.to_string()));
+                self.next_text_is_section = false;
+            }
+            _ => ()
+        }
+        true
+    }
+}
+
+// Transform the AST of the markdown to support custom markdown constructs
+fn markdown_to_html(markdown: &str) -> ParseResult {
+    let parser = Parser::new(markdown);
+    let mut events: Vec<Event> = Vec::new();
+    let mut result = ParseResult {
+        content: String::new(),
+        sections: Vec::new()
+    };
+
+    let mut handlers: Vec<Box<dyn EventHandler>> = vec![Box::new(SectionEventHandler { next_text_is_section: false })];
+
+    for event in parser {
+        let mut ignore_event = false;
+        for handler in handlers.iter_mut() {
+            if handler.handle(&event, &mut result, &mut events) == false {
+                ignore_event = true;
+            }
+        }
+        if !ignore_event {
+            events.push(event);
+        }
+    }
+    html::push_html(&mut result.content, events.into_iter());
+    result
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_sections() {
+        use crate::article;
+        let contents = r#"
+# Section 1
+Hello world
+## Section 2
+More text
+## Another section
+# Final section"#;
+        let result = article::markdown_to_html(&contents);
+        assert_eq!(result.sections.len(), 4);
+        assert_eq!(result.sections[0].1, "Section 1");
+    }
+
+    #[test]
+    fn test_naming() {
+        use crate::front_matter;
+        use crate::article;
+        let contents = r#"
+[frontMatter]
+title = "Hello World"
+tags = ["first tag", "second tag"]
+created = "2009-12-30"
+description = "A run around the world"
+published = true
+[meta]
+---
+this is the actual article contents yeah."#;
+        let (frontmatter, _) = front_matter::parse_front_matter(&contents, "yeah.md", &Default::default()).unwrap();
+        let slug = article::slug_from_frontmatter(&frontmatter);
+        assert_eq!(slug, "2009-12-30-hello-world.html");
+    }
+}

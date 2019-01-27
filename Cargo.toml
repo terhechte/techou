@@ -1,0 +1,16 @@
+[package]
+name = "techou"
+version = "0.1.0"
+authors = ["Benedikt Terhechte <terhechte@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+pulldown-cmark = "0.2.0"
+tera = "0.11.20"
+clap = "2.32.0"
+toml = "0.4"
+serde = "1.0.84"
+serde_derive = "1.0.84"
+sha2 = "0.8.0"
+rayon = "1.0"
+chrono = { version = "0.4", features = ["serde"] }

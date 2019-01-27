@@ -1,0 +1,6 @@
+<title>{{ title }}</title>
+<ul>
+{% for article in articles -%}
+  <li><a href="{{ article.slug }}">{{ article.info.title }}</a></li>
+{%- endfor %}
+</ul>
