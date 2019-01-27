@@ -1,3 +1,5 @@
+use fs_extra::dir;
+
 use std::path::{Path, PathBuf};
 use std::fs::{read_dir, create_dir_all};
 use std::ffi::OsStr;
@@ -45,4 +47,33 @@ pub fn contents_of_directory<A: AsRef<Path>>(directory: A, file_type: &str) -> R
         };
     }
     Ok(matches)
+}
+
+pub fn clear_directory<A: AsRef<Path>>(directory: A) -> Result<()> {
+    for entry in read_dir(directory.as_ref())? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            std::fs::remove_dir_all(path)?;
+        } else {
+            std::fs::remove_file(path)?;
+        }
+    }
+    Ok(())
+}
+
+pub fn copy_items_to_directory<A: AsRef<Path>>(items: &Vec<String>, from_dir: A, to_dir: A) -> Result<()> {
+    let mut options = fs_extra::dir::CopyOptions::new();
+    options.copy_inside = true;
+    options.overwrite = true;
+    let mut source_paths = Vec::new();
+    for entry in items {
+        let path = from_dir.as_ref().join(entry);
+        match path.exists() {
+            true => source_paths.push(path),
+            false => println!("Could not find path {:?}", &entry)
+        };
+    }
+    fs_extra::copy_items(&source_paths, to_dir, &options)?;
+    Ok(())
 }

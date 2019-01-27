@@ -14,3 +14,4 @@ serde_derive = "1.0.84"
 sha2 = "0.8.0"
 rayon = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
+fs_extra = "1.1.0"

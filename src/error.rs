@@ -4,6 +4,7 @@ use std::io;
 use std::result;
 
 use tera;
+use fs_extra;
 
 #[derive(Debug)]
 pub enum Error {
@@ -35,6 +36,10 @@ impl From<io::Error> for Error {
 
 impl From<tera::Error> for Error {
     fn from(error: tera::Error) -> Self { Error::Templating(error) }
+}
+
+impl From<fs_extra::error::Error> for Error {
+    fn from(error: fs_extra::error::Error) -> Self { Error::Other(format!("Copy Error: {:?}", &error)) }
 }
 
 pub type Result<T> = result::Result<T, Error>;

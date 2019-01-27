@@ -46,7 +46,7 @@ impl Config {
         self.output_folder_path().join(&self.tags_folder_name)
     }
 
-    pub fn template_folder_path(&self) -> PathBuf {
+    pub fn public_folder_path(&self) -> PathBuf {
         self.root.join(&self.public_folder)
     }
 }

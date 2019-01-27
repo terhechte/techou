@@ -12,8 +12,9 @@ use crate::list::List;
 pub fn execute<A: AsRef<Path>>(folder: A) -> Result<()> {
     let config: Config = Default::default();
 
-    // Clean the old output folder, if it still exists
-    std::fs::remove_dir_all(&config.output_folder_path())?;
+    // Clean the old output folder, if it still exists.
+    // We don't want to remove the folder, so that static servers still work
+    clear_directory(&config.output_folder_path())?;
 
     println!("Root folder: {:?}", &config.root);
     let files = contents_of_directory(config.posts_folder_path(), "md")?;
@@ -33,7 +34,7 @@ pub fn execute<A: AsRef<Path>>(folder: A) -> Result<()> {
         Some(article)
     }).collect();
 
-    let template_writer = Templates::new(&config.template_folder_path());
+    let template_writer = Templates::new(&config.public_folder_path());
 
     // write all posts + slug
     articles.par_iter().for_each(|article| {
@@ -56,5 +57,9 @@ pub fn execute<A: AsRef<Path>>(folder: A) -> Result<()> {
     // todo: write per tag
 
     // todo: write per year / month
+
+    // Write the assets
+    copy_items_to_directory(&config.public_copy_folders, &config.public_folder_path(), &config.output_folder_path())?;
+
     Ok(())
 }
