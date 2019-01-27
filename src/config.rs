@@ -25,7 +25,7 @@ pub struct Config {
 
 impl Config {
 
-    pub fn new<A: AsRef<PathBuf>>(folder: A) -> Config {
+    pub fn new<A: AsRef<std::path::Path>>(folder: A) -> Config {
         let mut config: Config = Default::default();
         config.root = folder.as_ref().to_path_buf();
         config

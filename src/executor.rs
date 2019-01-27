@@ -9,8 +9,8 @@ use crate::article::Article;
 use crate::template::Templates;
 use crate::list::List;
 
-pub fn execute<A: AsRef<Path>>(folder: A) -> Result<()> {
-    let config: Config = Default::default();
+pub fn execute(config: &Config) -> Result<()> {
+
 
     // Clean the old output folder, if it still exists.
     // We don't want to remove the folder, so that static servers still work
