@@ -1,0 +1,10 @@
+[package]
+name = "tm2css"
+version = "0.1.0"
+authors = ["Benedikt Terhechte <terhechte@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+serde = "1.0.84"
+clap = "2.32.0"
+plist = "0.4"

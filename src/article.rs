@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 use std::path::Path;
+
 use crate::front_matter::{parse_front_matter, FrontMatter};
 use crate::error::{Result, Error};
 use crate::config::Config;
 use crate::utils;
+use crate::parse_event_handlers::{section::SectionEventHandler, highlight::HighlightEventHandler, EventHandler, ParseResult};
 
 use chrono::Datelike;
 use pulldown_cmark::{Event, Parser, Tag, html};
@@ -41,34 +43,7 @@ fn slug_from_frontmatter(front_matter: &FrontMatter) -> String {
     format!("{}-{}-{}-{}.html", d.year(), d.month(), d.day(), title)
 }
 
-struct ParseResult {
-    pub content: String,
-    pub sections: Vec<(i32, String)>
-}
 
-trait EventHandler {
-    fn handle(&mut self, event: &Event, result: &mut ParseResult, events: &mut Vec<Event>) -> bool;
-}
-
-struct SectionEventHandler {
-    next_text_is_section: bool
-}
-
-impl EventHandler for SectionEventHandler {
-    fn handle(&mut self, event: &Event, result: &mut ParseResult, events: &mut Vec<Event>) -> bool {
-        match &event {
-            &Event::Start(Tag::Header(_)) => {
-                self.next_text_is_section = true;
-            }
-            &Event::Text(ref text) if self.next_text_is_section => {
-                result.sections.push(((result.sections.len() as i32) + 1, text.to_string()));
-                self.next_text_is_section = false;
-            }
-            _ => ()
-        }
-        true
-    }
-}
 
 // Transform the AST of the markdown to support custom markdown constructs
 fn markdown_to_html(markdown: &str) -> ParseResult {
@@ -79,9 +54,13 @@ fn markdown_to_html(markdown: &str) -> ParseResult {
         sections: Vec::new()
     };
 
-    let mut handlers: Vec<Box<dyn EventHandler>> = vec![Box::new(SectionEventHandler { next_text_is_section: false })];
+    let mut handlers: Vec<Box<dyn EventHandler>> = vec![
+        Box::new(SectionEventHandler::new()),
+        Box::new(HighlightEventHandler::new())
+    ];
 
     for event in parser {
+        println!("event: {:?}", &event);
         let mut ignore_event = false;
         for handler in handlers.iter_mut() {
             if handler.handle(&event, &mut result, &mut events) == false {
@@ -130,5 +109,23 @@ this is the actual article contents yeah."#;
         let (frontmatter, _) = front_matter::parse_front_matter(&contents, "yeah.md", &Default::default()).unwrap();
         let slug = article::slug_from_frontmatter(&frontmatter);
         assert_eq!(slug, "2009-12-30-hello-world.html");
+    }
+
+    #[test]
+    fn test_syntax() {
+        use crate::article;
+        let contents = r#"
+# Section 1
+`printf()`
+
+more code
+``` Rust
+if let Some(x) = variable {
+  println!("{}", &x);
+}
+
+"#;
+        let result = article::markdown_to_html(&contents);
+        println!("{}", result.content);
     }
 }

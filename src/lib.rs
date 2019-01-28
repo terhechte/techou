@@ -5,6 +5,7 @@ mod io_utils;
 mod utils;
 mod error;
 mod template;
+mod parse_event_handlers;
 
 pub mod config;
 pub mod executor;
