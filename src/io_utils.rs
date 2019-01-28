@@ -1,4 +1,4 @@
-use fs_extra::dir;
+use copy_dir::*;
 
 use std::path::{Path, PathBuf};
 use std::fs::{read_dir, create_dir_all};
@@ -63,18 +63,19 @@ pub fn clear_directory<A: AsRef<Path>>(directory: A) -> Result<()> {
 }
 
 pub fn copy_items_to_directory<A: AsRef<Path>>(items: &Vec<String>, from_dir: A, to_dir: A) -> Result<()> {
-    let mut options = fs_extra::dir::CopyOptions::new();
-    options.copy_inside = true;
-    options.overwrite = true;
     for entry in items {
         let path = from_dir.as_ref().join(entry);
         if !path.exists() {
-                println!("Could not find path {:?}", &entry);
-                continue
+            println!("Could not find path {:?}", &entry);
+            continue
         };
         println!("copy '{:?}' to '{:?}'", &path, &to_dir.as_ref());
         // We copy each item seperately, so we can see when it fails
-        fs_extra::copy_items(&vec![&path], &to_dir, &options)?;
+        match copy_dir(&path, &to_dir.as_ref()) {
+            Ok(ref e) if e.len() > 0 => e.iter().for_each(|m| println!("Could not copy {:?}", &e)),
+            Err(e) => println!("Copy Error: {:?}", &e),
+            _ => ()
+        };
     }
     Ok(())
 }

@@ -4,7 +4,6 @@ use std::io;
 use std::result;
 
 use tera;
-use fs_extra;
 use toml;
 
 #[derive(Debug)]
@@ -37,10 +36,6 @@ impl From<io::Error> for Error {
 
 impl From<tera::Error> for Error {
     fn from(error: tera::Error) -> Self { Error::Templating(error) }
-}
-
-impl From<fs_extra::error::Error> for Error {
-    fn from(error: fs_extra::error::Error) -> Self { Error::Other(format!("Copy Error: {:?}", &error)) }
 }
 
 impl From<toml::de::Error> for Error {
