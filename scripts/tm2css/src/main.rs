@@ -70,9 +70,11 @@ fn main() {
         .author("Benedikt Terhechte")
         .arg(Arg::with_name("tm-theme").short("s").value_name("TM-THEME").required(true))
         .arg(Arg::with_name("root-selector").short("f").value_name("ROOT-SELECTOR").required(false))
+        .arg(Arg::with_name("ignore-background").short("i").required(false))
         .get_matches();
     let path = matches.value_of("tm-theme").unwrap();
     let container_name = matches.value_of("root-selector").unwrap_or("pre > code");
+    let ignore_background: bool = matches.is_present("ignore-background");
 
     let value = Value::from_file(&path).unwrap();
     let dict = match value {
@@ -107,8 +109,10 @@ fn main() {
         if let Some(Value::String(foreground)) = settings.get("foreground") {
             current.foreground = Some(foreground.to_string());
         }
-        if let Some(Value::String(background)) = settings.get("background") {
-            current.background = Some(background.to_string());
+        if !ignore_background {
+            if let Some(Value::String(background)) = settings.get("background") {
+                current.background = Some(background.to_string());
+            }
         }
         if let Some(Value::String(font_style)) = settings.get("fontStyle") {
             current.font_style = Some(font_style.to_string());
