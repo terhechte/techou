@@ -21,7 +21,7 @@ pub struct FrontMatter {
     pub published: bool,
 
     // The Meta Information will be injected
-    #[serde(default)]
+    #[serde(default, skip)]
     pub meta: HashMap<String, String>,
     // The unix timestamp will be injected
     #[serde(default)]
@@ -36,9 +36,9 @@ pub struct FrontMatter {
 impl FrontMatter {
     pub fn rfc2822(&self) -> String {
         use chrono::format::Item;
-        let format = Item::Fixed(chrono::format::Fixed::RFC2822);
-        let delayed_time = self.date.format_with_items(vec![format.clone()].into_iter());
-        delayed_time.to_string()
+        use chrono::{DateTime, TimeZone, NaiveDateTime, Utc};
+        let dt = DateTime::<Utc>::from_utc(self.date.clone(), Utc);
+        return dt.to_rfc2822();
     }
 }
 
@@ -46,6 +46,7 @@ impl FrontMatter {
 #[serde(rename_all = "camelCase")]
 struct ParsedFrontMatter {
     front_matter: FrontMatter,
+    #[serde(default, skip)]
     meta: HashMap<String, String>
 }
 
@@ -126,5 +127,21 @@ this is the actual article contents yeah."#;
         assert!(result.is_ok());
         let (fm, _) = result.unwrap();
         assert_eq!(fm.title, "Hello World");
+    }
+
+    #[test]
+    fn test_rfc2822() {
+        use crate::front_matter;
+        let contents = r#"
+[frontMatter]
+title = "Hello World"
+tags = ["first tag", "second tag"]
+created = "2009-12-30"
+description = "A run around the world"
+published = true
+---
+this."#;
+        let (fm, _) = front_matter::parse_front_matter(&contents, "yeah.md", &Default::default()).unwrap();
+        assert!(fm.rfc2822().len() > 0);
     }
 }
