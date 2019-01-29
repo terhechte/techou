@@ -60,7 +60,6 @@ fn markdown_to_html(markdown: &str) -> ParseResult {
     ];
 
     for event in parser {
-        println!("event: {:?}", &event);
         let mut ignore_event = false;
         for handler in handlers.iter_mut() {
             if handler.handle(&event, &mut result, &mut events) == false {
@@ -126,6 +125,6 @@ if let Some(x) = variable {
 
 "#;
         let result = article::markdown_to_html(&contents);
-        println!("{}", result.content);
+        assert!(result.content.contains("source rust"));
     }
 }

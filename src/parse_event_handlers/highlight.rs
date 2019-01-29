@@ -44,7 +44,6 @@ impl EventHandler for HighlightEventHandler {
                 return false;
             }
             &Event::End(Tag::CodeBlock(_)) => {
-                self.next_text_is_code = false;
                 // try to find a syntax
                 let syntax = match self.syntax_set.find_syntax_by_name(&self.language) {
                     Some(s) => s,
@@ -53,29 +52,22 @@ impl EventHandler for HighlightEventHandler {
                         None => self.syntax_set.find_syntax_plain_text()
                     }
                 };
-                //let mys = self.syntax_set.find_syntax_by_extension(&self.language).unwrap_or(self.syntax_set.find_syntax_plain_text());
-                //let mys = self.syntax_set.find_syntax_by_name("Rust").unwrap();
                 let mut ps = ParseState::new(&syntax);
-                self.language = "text".to_owned();
-                // FIXME: Highlight
                 let mut html_str = String::new();
                 for line in self.current_code.lines() {
-                    println!("line: {}", &line);
                     let parsed_line = ps.parse_line(line, &self.syntax_set);
-                    //println!("parsed: {:?}", &prsl);
+                    // If there was nothing to parse, we just add the line as is
                     match parsed_line.len() {
                         0 => html_str.push_str(&line),
                         _ => html_str.push_str(&tokens_to_classed_html(line, parsed_line.as_slice(), ClassStyle::Spaced).as_str())
                     }
-                    //let tok = ;
-                    //println!("tok: {}", &tok);
-                    //html_str.push_str(tok.as_str());
                     html_str.push('\n');
                 }
 
-                events.push(Event::Html(Cow::Owned(format!("<code>{}</code>", &html_str))));
-                println!("push the code: {}", &self.current_code);
+                events.push(Event::Html(Cow::Owned(format!("<pre class=\"{}\"><code>{}</code></pre>", &syntax.name, &html_str))));
                 self.current_code = String::new();
+                self.language = "text".to_owned();
+                self.next_text_is_code = false;
             }
             _ => ()
         }

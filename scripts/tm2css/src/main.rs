@@ -18,30 +18,41 @@ impl Default for StyleEntry {
 impl StyleEntry {
     fn css_entries(&self, root: &str) -> Vec<String> {
         let mut results: Vec<String> = Vec::new();
-        let selectors: Vec<&str> = match &self.scope {
-            Some(ref s) => s.split(".").collect(),
-            None => vec!["*"]
+        match &self.scope {
+            Some(ref s) => {
+                //s.split(",").collect(),
+                for selector in s.split(",") {
+                    // some themes include a -(ignore). we ignore the ignore
+                    if selector.contains("(") { continue }
+                    // spaces define hierachies. We need to add dots
+                    let replaced: Vec<String> = selector.trim().split(" ").map(|s| format!(".{}", &s)).collect();
+                    results.push(self.css_entry(&root, &replaced.join(" ")));
+                }
+            },
+            None => {
+                results.push(self.css_entry(&root, "*"));
+            }
         };
-        for selector in selectors {
-            results.push(self.css_entry(&root, &selector));
-        }
         results
     }
 
     fn css_entry(&self, root: &str, selector: &str) -> String {
-        let mut result = format!("{} > .{} {{\n", &root, &selector);
+        // Only use a dot for the non-global selector
+        let mut result = format!("{} {} {{\n", &root, &selector);
         if let Some(ref fg) = self.foreground {
             result.push_str(&format!("\tcolor: {};\n", &fg));
-        }
-        if let Some(ref bg) = self.background {
+        } if let Some(ref bg) = self.background {
             result.push_str(&format!("\tbackground-color: {};\n", &bg));
         }
-        result.push_str(&format!("\t{}\n", match self.font_style.as_ref().map(|s|s.as_str()) {
-            Some("bold") => "font-weight: bold;",
-            Some("italic") => "font-style: italic;",
-            Some("underline") => "font-decoration: underline;",
+        let translated = match self.font_style.as_ref().map(|s|s.as_str()) {
+            Some("bold") => "font-weight: bold",
+            Some("italic") => "font-style: italic",
+            Some("underline") => "font-decoration: underline",
             _ => ""
-        }));
+        };
+        if translated.len() > 0 {
+            result.push_str(&format!("\t{};\n", &translated));
+        }
         result.push_str("}\n");
         result
     }
@@ -51,10 +62,7 @@ impl StyleEntry {
 
 fn main() {
     use plist;
-    use std::io;
-    use std::io::prelude::*;
-    use std::fs::File;
-    use clap::{Arg, App, SubCommand};
+    use clap::{Arg, App};
     use plist::Value;
 
     let matches = App::new("tm2css")
@@ -99,10 +107,10 @@ fn main() {
         if let Some(Value::String(foreground)) = settings.get("foreground") {
             current.foreground = Some(foreground.to_string());
         }
-        if let Some(Value::String(background)) = item_dict.get("background") {
+        if let Some(Value::String(background)) = settings.get("background") {
             current.background = Some(background.to_string());
         }
-        if let Some(Value::String(font_style)) = item_dict.get("fontStyle") {
+        if let Some(Value::String(font_style)) = settings.get("fontStyle") {
             current.font_style = Some(font_style.to_string());
         }
 

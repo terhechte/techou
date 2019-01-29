@@ -64,14 +64,15 @@ pub fn clear_directory<A: AsRef<Path>>(directory: A) -> Result<()> {
 
 pub fn copy_items_to_directory<A: AsRef<Path>>(items: &Vec<String>, from_dir: A, to_dir: A) -> Result<()> {
     for entry in items {
-        let path = from_dir.as_ref().join(entry);
-        if !path.exists() {
+        let source = from_dir.as_ref().join(entry);
+        if !source.exists() {
             println!("Could not find path {:?}", &entry);
             continue
         };
-        println!("copy '{:?}' to '{:?}'", &path, &to_dir.as_ref());
+        let target = to_dir.as_ref().join(entry);
+        println!("copy '{:?}' to '{:?}'", &source, &target);
         // We copy each item seperately, so we can see when it fails
-        match copy_dir(&path, &to_dir.as_ref()) {
+        match copy_dir(&source, &target) {
             Ok(ref e) if e.len() > 0 => e.iter().for_each(|m| println!("Could not copy {:?}", &e)),
             Err(e) => println!("Copy Error: {:?}", &e),
             _ => ()
