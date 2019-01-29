@@ -6,6 +6,7 @@ mod utils;
 mod error;
 mod template;
 mod parse_event_handlers;
+mod feeds;
 
 pub mod config;
 pub mod executor;

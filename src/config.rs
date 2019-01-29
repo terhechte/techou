@@ -6,6 +6,23 @@ use crate::io_utils::slurp;
 use crate::error::Result;
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RSS {
+    #[serde(default)]
+    pub absolute_feed_address: String, // the absolute URL of the feed
+    #[serde(default)]
+    pub title: String,
+    #[serde(default)]
+    pub link: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub author_email: String,
+    #[serde(default)]
+    pub author_name: String,
+}
+
+#[derive(Deserialize)]
 #[serde(default)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
@@ -30,7 +47,12 @@ pub struct Config {
     /// Date Formats
     pub date_format: String,
     pub date_time_format: String,
-    pub output_date_time_format: String
+    pub output_date_time_format: String,
+
+    /// RSS
+    #[serde(default)]
+    #[serde(alias = "RSS")]
+    pub rss_settings: Option<RSS>
 }
 
 impl Config {
@@ -94,7 +116,9 @@ impl Default for Config {
 
             date_format: "%Y-%m-%d".to_string(),
             date_time_format: "%Y-%m-%d %H:%M:%S".to_string(),
-            output_date_time_format: "%Y-%m-%d %H:%M:%S".to_string()
+            output_date_time_format: "%Y-%m-%d %H:%M:%S".to_string(),
+
+            rss_settings: None
         }
     }
 }
@@ -111,5 +135,20 @@ outputFolder = "franz/"
         let parsed = Config::toml(&contents, &std::path::PathBuf::from("/tmp/test.toml")).unwrap();
         assert_eq!(parsed.posts_folder, "jochen/");
 
+    }
+
+    #[test]
+    fn test_parse_rss() {
+        use crate::config::Config;
+        let contents = r#"
+postsFolder = "jochen/"
+outputFolder = "franz/"
+
+[RSS]
+title = "klaus"
+"#;
+        let parsed = Config::toml(&contents, &std::path::PathBuf::from("/tmp/test.toml")).unwrap();
+        assert!(parsed.rss_settings.is_some());
+        assert_eq!(parsed.rss_settings.unwrap().title, "klaus");
     }
 }

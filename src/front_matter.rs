@@ -26,11 +26,20 @@ pub struct FrontMatter {
     // The unix timestamp will be injected
     #[serde(default)]
     pub created_timestamp: i64,
-    // The unique identifier will be injected (based on the title)
     #[serde(default="default_nativetime", skip)]
     pub date: NaiveDateTime,
+    // The unique identifier will be injected (based on the title)
     #[serde(default)]
     pub identifier: String
+}
+
+impl FrontMatter {
+    pub fn rfc2822(&self) -> String {
+        use chrono::format::Item;
+        let format = Item::Fixed(chrono::format::Fixed::RFC2822);
+        let delayed_time = self.date.format_with_items(vec![format.clone()].into_iter());
+        delayed_time.to_string()
+    }
 }
 
 #[derive(Deserialize, Debug)]

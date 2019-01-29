@@ -8,6 +8,7 @@ use crate::config::Config;
 use crate::article::Article;
 use crate::template::Templates;
 use crate::list::List;
+use crate::feeds;
 
 pub fn execute(config: &Config) -> Result<()> {
 
@@ -57,6 +58,11 @@ pub fn execute(config: &Config) -> Result<()> {
     // todo: write per tag
 
     // todo: write per year / month
+
+    // Write the feed
+    if let Some(ref rss) = &config.rss_settings {
+        feeds::write_articles_rss(&articles, &config.output_folder_path().join("feed.rss"), &config, rss)?;
+    }
 
     // Write the assets
     copy_items_to_directory(&config.public_copy_folders, &config.public_folder_path(), &config.output_folder_path())?;
