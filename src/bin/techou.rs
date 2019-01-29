@@ -18,10 +18,12 @@ fn main() {
         .arg(Arg::with_name("project-dir").short("d").value_name("PROJECT-DIR").required(false))
         .arg(Arg::with_name("project-file").short("f").value_name("PROJECT-FILE").required(false))
         .arg(Arg::with_name("watch").short("w").long("watch").required(false))
+        .arg(Arg::with_name("serve").short("s").long("serve").required(false))
         .get_matches();
     let root_dir = matches.value_of("project-dir").unwrap_or(".");
     let project_file = matches.value_of("project-file").unwrap_or("");
     let should_watch = matches.is_present("watch");
+    let should_serve = matches.is_present("serve");
 
     let config = match project_file.len() {
         0 => techou::config::Config::new(root_dir),
@@ -43,6 +45,10 @@ fn main() {
             };
             println!("Done");
         });
+    }
+
+    if should_serve {
+        techou::server::run_file_server(&config);
     }
 }
 

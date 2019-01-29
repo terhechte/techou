@@ -18,3 +18,4 @@ chrono = { version = "0.4", features = ["serde"] }
 copy_dir = "0.1.2"
 syntect = "3.0"
 rss = "1.0"
+actix-web = "0.7.18"
