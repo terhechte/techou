@@ -29,13 +29,17 @@ impl Templates {
 
     pub fn write_article<A: AsRef<Path>>(&self, article: &Article, path: A, config: &Config) -> Result<()> {
         let mut rendered = self.tera.render(&config.article_template, &article)?;
-        // FIXME: Make this config dependent
-        rendered.push_str(&auto_reload_code(&config));
+        if config.auto_reload_browser_via_websocket_on_change {
+            rendered.push_str(&auto_reload_code(&config));
+        }
         spit(path.as_ref(), &rendered)
     }
 
     pub fn write_list<'a, A: AsRef<Path>>(&self, list: &'a List<'a>, path: A, config: &Config) -> Result<()> {
-        let rendered = self.tera.render(&config.list_template, &list)?;
+        let mut rendered = self.tera.render(&config.list_template, &list)?;
+        if config.auto_reload_browser_via_websocket_on_change {
+            rendered.push_str(&auto_reload_code(&config));
+        }
         spit(path.as_ref(), &rendered)
     }
 }

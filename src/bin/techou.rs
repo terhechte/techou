@@ -32,7 +32,7 @@ fn main() {
         }
     };
 
-    match techou::executor::execute(&config) {
+    match techou::executor::execute(false, &config) {
         Err(e) => println!("Error: {:?}", &e),
         _ => ()
     };
@@ -42,7 +42,7 @@ fn main() {
         let innerConfig = config.clone();
         std::thread::spawn(move || {
             trigger_on_change(&[&innerConfig.public_folder_path(), &innerConfig.posts_folder_path()], |path| {
-                match techou::executor::execute(&innerConfig) {
+                match techou::executor::execute(true, &innerConfig) {
                     Err(e) => println!("Error: {:?}", &e),
                     _ => ()
                 };
