@@ -39,13 +39,16 @@ fn main() {
 
     let (reload_sender, reload_receiver) = channel();
     if should_watch {
-        trigger_on_change(&[&config.public_folder_path(), &config.posts_folder_path()], |path| {
-            match techou::executor::execute(&config) {
-                Err(e) => println!("Error: {:?}", &e),
-                _ => ()
-            };
-            &reload_sender.send(true);
-            println!("Done");
+        let innerConfig = config.clone();
+        std::thread::spawn(move || {
+            trigger_on_change(&[&innerConfig.public_folder_path(), &innerConfig.posts_folder_path()], |path| {
+                match techou::executor::execute(&innerConfig) {
+                    Err(e) => println!("Error: {:?}", &e),
+                    _ => ()
+                };
+                &reload_sender.send(true);
+                println!("Done");
+            });
         });
     }
 

@@ -5,7 +5,7 @@ use serde_derive::{Deserialize};
 use crate::io_utils::slurp;
 use crate::error::Result;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RSS {
     #[serde(default)]
@@ -22,7 +22,7 @@ pub struct RSS {
     pub author_name: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 #[serde(default)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
@@ -50,7 +50,7 @@ pub struct Config {
     pub output_date_time_format: String,
 
     /// Server configuration
-    pub server_port: i32,
+    pub server_address: String, // usually "127.0.0.1:8001"
     // Insert websocket javascript to automatically reload
     // when a change is detected
     pub auto_reload_browser_via_websocket_on_change: bool,
@@ -125,9 +125,9 @@ impl Default for Config {
             date_time_format: "%Y-%m-%d %H:%M:%S".to_string(),
             output_date_time_format: "%Y-%m-%d %H:%M:%S".to_string(),
 
-            server_port: 8001,
+            server_address: "127.0.0.1:8001".to_string(),
             auto_reload_browser_via_websocket_on_change: true,
-            auto_reload_websocket_path: "ws".to_string(),
+            auto_reload_websocket_path: "/ws/".to_string(),
 
             rss_settings: None
         }

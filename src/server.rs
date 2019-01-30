@@ -4,49 +4,27 @@ use actix::prelude::*;
 use actix_web::{
     fs, http, middleware, server, ws, App, Error, HttpRequest, HttpResponse
 };
-
+use std::time::{Instant, Duration};
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
 
-use actix_broker::{BrokerSubscribe, BrokerIssue};
 
 pub fn auto_reload_code(config: &Config) -> String {
     format!(r#"
 <script language="Javascript">
-    var exampleSocket = new WebSocket("ws://localhost:{}/{}");
+    var wsUri = (window.location.protocol=='https:'&&'wss://'||'ws://')+window.location.host + '{}';
+    let exampleSocket = new WebSocket(wsUri);
     exampleSocket.onopen = function (event) {{
       exampleSocket.send("Connect"); 
     }};
     exampleSocket.onmessage = function (event) {{
-      console.log(event.data);
-      document.location.reload();
+      //console.log(event.data);
+      if (event.data == "reload") {{
+        document.location.reload();
+      }}
     }}
 </script>
-    "#, &config.server_port, &config.auto_reload_websocket_path)
-}
-
-#[derive(Clone, Debug, Message)]
-struct ReloadMessage(String);
-
-struct ReloadReceiverActor {
-    receiver: Arc<Mutex<Receiver<bool>>>
-}
-
-impl ReloadReceiverActor {
-    fn new(receiver: Arc<Mutex<Receiver<bool>>>) -> Self {
-        ReloadReceiverActor {
-            receiver
-        }
-    }
-}
-
-impl Actor for ReloadReceiverActor {
-    type Context = ws::WebsocketContext<Self, AppState>;
-    fn started(&mut self, ctx: &mut Self::Context) {
-        /*for event in self.receiver.iter() {
-            println!("Received do reload event");
-        }*/
-    }
+    "#, &config.auto_reload_websocket_path)
 }
 
 struct ReloadWebSocketActor;
@@ -54,45 +32,30 @@ struct ReloadWebSocketActor;
 impl Actor for ReloadWebSocketActor {
     type Context = ws::WebsocketContext<Self, AppState>;
     fn started(&mut self, ctx: &mut Self::Context) {
-        //self.subscribe_sync::<ReloadMessage>(ctx);
-        println!("started actor");
-        let wrapped_receiver = &ctx.state().state.clone();
-        let r = wrapped_receiver.lock().unwrap();
-        for event in r.iter() {
-            println!("event: {:?}", &event);
-            &ctx.text("hello javascript");
-        }
+        self.hb(ctx);
     }
 }
 
-impl Handler<ReloadMessage> for ReloadWebSocketActor {
-    type Result = ();
-    fn handle(&mut self,  msg: ReloadMessage, ctx: &mut Self::Context) {
-        // this is where we send a message
+impl ReloadWebSocketActor {
+    fn hb(&self, ctx: &mut <Self as Actor>::Context) {
+        // check every 100ms
+        ctx.run_interval(Duration::from_millis(100), |act, ctx| {
+            let wrapped_receiver = &ctx.state().state.clone();
+            let r = wrapped_receiver.lock().unwrap();
+            let mut iter = r.try_iter();
+            // Consume the iterator while also getting the last value. if we have
+            // one value, it is true, if we have more values, the last is also true
+            // This way, we only reload once even if multiple `reload`s did make it into the iterator
+            if iter.last() == Some(true) {
+                ctx.text("reload");
+            }
+        });
     }
 }
 
 impl StreamHandler<ws::Message, ws::ProtocolError> for ReloadWebSocketActor {
     fn handle(&mut self, msg: ws::Message, ctx: &mut Self::Context) {
-        println!("Receveid message: {:?}", &msg);
-        ctx.pong("hellow");
     }
-}
-
-impl ReloadWebSocketActor {
-    fn new() -> Self {
-        Self { }
-    }
-
-    /*fn start_receiving(&self, ctx: &mut <Self as Actor>::Context) {
-        // Maybe this needs to be in a thread?
-        //println!("received");
-        self.subscribe_sync
-        //println!("r: {:?}", self.receiver);
-        /*for event in self.receiver.iter() {
-            println!("Received do reload event");
-        }*/
-    }*/
 }
 
 struct AppState {
@@ -100,15 +63,20 @@ struct AppState {
 }
 
 pub fn run_file_server(reload_receiver: Receiver<bool>, config: &Config) {
+    let sys = actix::System::new("techou");
+
     let folder = config.output_folder_path().to_str()
         .expect("Expect output folder to serve").to_string();
-    println!("Serving '{}' on {}", &folder, &config.server_port);
+    let ws_path = config.auto_reload_websocket_path.clone();
+
+    println!("Serving '{:?}' on {}", &folder, &config.server_address);
     let receiver = Arc::new(Mutex::new(reload_receiver));
-    //let receive_actor = ReloadReceiverActor::new(receiver);
+
     server::new(move || {
         App::with_state(AppState { state: receiver.clone() })
-            //new()
-            .resource("/ws/", |r| r.method(http::Method::GET).f(|req| ws::start(req, ReloadWebSocketActor::new())))
+            .resource(&ws_path, |r| r.method(http::Method::GET).f(|req| {
+                ws::start(req, ReloadWebSocketActor)
+            }))
             .handler(
                 "/",
                 fs::StaticFiles::new(&folder)
@@ -116,7 +84,9 @@ pub fn run_file_server(reload_receiver: Receiver<bool>, config: &Config) {
                     .show_files_listing())
             .finish()
     })
-        .bind("127.0.0.1:8001")
-        .expect("Can not bind to port 8001")
-        .run();
+        .bind(&config.server_address)
+        .expect(&format!("Can not bind to {}", &config.server_address))
+        .start();
+
+    sys.run();
 }
