@@ -8,6 +8,7 @@ use crate::article::Article;
 use crate::list::List;
 use crate::io_utils::spit;
 use crate::config::Config;
+use crate::server::auto_reload_code;
 
 pub struct Templates {
     tera: Tera
@@ -27,7 +28,9 @@ impl Templates {
     }
 
     pub fn write_article<A: AsRef<Path>>(&self, article: &Article, path: A, config: &Config) -> Result<()> {
-        let rendered = self.tera.render(&config.article_template, &article)?;
+        let mut rendered = self.tera.render(&config.article_template, &article)?;
+        // FIXME: Make this config dependent
+        rendered.push_str(&auto_reload_code(&config));
         spit(path.as_ref(), &rendered)
     }
 

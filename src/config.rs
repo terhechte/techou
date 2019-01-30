@@ -49,6 +49,13 @@ pub struct Config {
     pub date_time_format: String,
     pub output_date_time_format: String,
 
+    /// Server configuration
+    pub server_port: i32,
+    // Insert websocket javascript to automatically reload
+    // when a change is detected
+    pub auto_reload_browser_via_websocket_on_change: bool,
+    pub auto_reload_websocket_path: String,
+
     /// RSS
     #[serde(default)]
     #[serde(alias = "RSS")]
@@ -117,6 +124,10 @@ impl Default for Config {
             date_format: "%Y-%m-%d".to_string(),
             date_time_format: "%Y-%m-%d %H:%M:%S".to_string(),
             output_date_time_format: "%Y-%m-%d %H:%M:%S".to_string(),
+
+            server_port: 8001,
+            auto_reload_browser_via_websocket_on_change: true,
+            auto_reload_websocket_path: "ws".to_string(),
 
             rss_settings: None
         }

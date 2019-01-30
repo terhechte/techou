@@ -37,18 +37,20 @@ fn main() {
         _ => ()
     };
 
+    let (reload_sender, reload_receiver) = channel();
     if should_watch {
         trigger_on_change(&[&config.public_folder_path(), &config.posts_folder_path()], |path| {
             match techou::executor::execute(&config) {
                 Err(e) => println!("Error: {:?}", &e),
                 _ => ()
             };
+            &reload_sender.send(true);
             println!("Done");
         });
     }
 
     if should_serve {
-        techou::server::run_file_server(&config);
+        techou::server::run_file_server(reload_receiver, &config);
     }
 }
 
