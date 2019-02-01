@@ -6,40 +6,56 @@ use std::result;
 use tera;
 use toml;
 
-#[derive(Debug)]
-pub enum Error {
-    Io(io::Error),
-    FrontMatter(String),
-    Templating(tera::Error),
-    Other(String)
+use err_derive::*;
+
+#[derive(Debug, err_derive::Error)]
+pub enum TechouError {
+
+    #[error(display = "io error with {}: {}", context, source)]
+    IO { source: io::Error, context: String },
+
+    #[error(display = "invalid front-matter: {:?}", issue)]
+    FrontMatter { issue: String },
+
+    #[error(display = "templating error with {}: {}", context, source)]
+    Templating { source: tera::Error, context: String },
+
+    #[error(display = "toml error with {}: {}", context, source)]
+    TOML { source: toml::de::Error, context: String },
+
+    #[error(display = "other: {:?}", issue)]
+    Other { issue: String },
 }
 
-impl Display for Error {
-    fn fmt(&self, formatter: &mut Formatter) -> fmt::Result {
-        match *self {
-            Error::Io(ref error) => error.fmt(formatter),
-            Error::FrontMatter(ref error) => error.fmt(formatter),
-            Error::Templating(ref error) => error.fmt(formatter),
-            Error::Other(ref error) => error.fmt(formatter),
-        }
+pub type Result<T> = result::Result<T, TechouError>;
+
+pub trait ResultContext<T> {
+    fn ctx<A: std::fmt::Debug>(self, ctx: A) -> Result<T>;
+}
+
+impl<T> ResultContext<T> for result::Result<T, io::Error> {
+    fn ctx<A: std::fmt::Debug>(self, ctx: A) -> Result<T> {
+        self.map_err(|e| TechouError::IO {
+            source: e,
+            context: format!("{:?}", ctx)
+        })
     }
 }
 
-impl error::Error for Error {
-}
-
-impl From<io::Error> for Error {
-    fn from(error: io::Error) -> Self {
-        Error::Io(error)
+impl<T> ResultContext<T> for result::Result<T, tera::Error> {
+    fn ctx<A: std::fmt::Debug>(self, ctx: A) -> Result<T> {
+        self.map_err(|e| TechouError::Templating {
+            source: e,
+            context: format!("{:?}", ctx)
+        })
     }
 }
 
-impl From<tera::Error> for Error {
-    fn from(error: tera::Error) -> Self { Error::Templating(error) }
+impl<T> ResultContext<T> for result::Result<T, toml::de::Error> {
+    fn ctx<A: std::fmt::Debug>(self, ctx: A) -> Result<T> {
+        self.map_err(|e| TechouError::TOML {
+            source: e,
+            context: format!("{:?}", ctx)
+        })
+    }
 }
-
-impl From<toml::de::Error> for Error {
-    fn from(error: toml::de::Error) -> Self { Error::Other(format!("Could not parse toml: {:?}", &error)) }
-}
-
-pub type Result<T> = result::Result<T, Error>;

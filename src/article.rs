@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use crate::front_matter::{parse_front_matter, FrontMatter};
-use crate::error::{Result, Error};
+use crate::error::{Result, TechouError, ResultContext};
 use crate::config::Config;
 use crate::utils;
 use crate::parse_event_handlers::{section::SectionEventHandler, highlight::HighlightEventHandler, EventHandler, ParseResult};
@@ -24,7 +24,7 @@ pub struct Article {
 impl Article {
     pub fn new<A: AsRef<Path>>(contents: &str, path: A, config: &Config) -> Result<Article> {
         let filename = path.as_ref().file_name().and_then(|e| e.to_str())
-            .ok_or(Error::Other(format!("Path {:?} has no filename. Can't read it.", path.as_ref())))?
+            .ok_or(TechouError::Other{issue: format!("Path {:?} has no filename. Can't read it.", path.as_ref())})?
             .to_string();
         let identifier = utils::hash_string(&filename, 8);
         let (info, article) = parse_front_matter(&contents, &path.as_ref(), &config)?;

@@ -47,7 +47,9 @@ impl ReloadWebSocketActor {
             // one value, it is true, if we have more values, the last is also true
             // This way, we only reload once even if multiple `reload`s did make it into the iterator
             if iter.last() == Some(true) {
-                ctx.text("reload");
+                ctx.run_later(Duration::from_millis(250), |act, ctx| {
+                    ctx.text("reload");
+                });
             }
         });
     }

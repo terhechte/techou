@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use serde_derive::{Deserialize};
 
 use crate::io_utils::slurp;
-use crate::error::Result;
+use crate::error::*;
 
 #[derive(Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -71,7 +71,8 @@ impl Config {
     }
 
     pub fn toml(input: &str, in_folder: &PathBuf) -> Result<Config> {
-        let mut config: Config = toml::from_str(&input)?;
+        let mut config: Config = toml::from_str(&input)
+            .ctx(format!("toml file in folder {:?}", &in_folder))?;
         config.root = in_folder.clone();
         Ok(config)
     }

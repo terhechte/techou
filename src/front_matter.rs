@@ -1,15 +1,40 @@
 use std::collections::HashMap;
 use std::path::Path;
 use toml::de::from_str;
-use chrono::{NaiveDate, NaiveDateTime};
+use chrono::{NaiveDate, NaiveDateTime, Datelike, Timelike};
 use serde;
 use serde_derive::{Serialize, Deserialize};
 
 use crate::config::Config;
-use crate::error::{Result, Error};
+use crate::error::{Result, TechouError};
+
+use pulldown_cmark::{Parser, html};
 
 fn default_nativetime() -> NaiveDateTime {
     NaiveDate::from_ymd(2016, 7, 8).and_hms(9, 10, 11)
+}
+
+#[derive(Serialize, Deserialize, Debug, Default)]
+pub struct DateInfo {
+    pub year: i32,
+    pub month: u32,
+    pub day: u32,
+    pub hour: u32,
+    pub minute: u32,
+    pub second: u32
+}
+
+impl From<NaiveDateTime> for DateInfo {
+    fn from(date_time: NaiveDateTime) -> Self {
+        DateInfo {
+            year: date_time.year(),
+            month: date_time.month(),
+            day: date_time.day(),
+            hour: date_time.hour(),
+            minute: date_time.minute(),
+            second: date_time.second()
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -18,6 +43,8 @@ pub struct FrontMatter {
     pub tags: Vec<String>,
     pub created: String,
     pub description: String,
+    #[serde(default)]
+    pub description_html: String,
     pub published: bool,
 
     // The Meta Information will be injected
@@ -28,6 +55,8 @@ pub struct FrontMatter {
     pub created_timestamp: i64,
     #[serde(default="default_nativetime", skip)]
     pub date: NaiveDateTime,
+    #[serde(default)]
+    pub date_info: DateInfo, // FIXME: Move all date/time info into this struct.
     // The unique identifier will be injected (based on the title)
     #[serde(default)]
     pub identifier: String
@@ -54,7 +83,7 @@ pub fn parse_front_matter<'a, A: AsRef<Path>>(input: &'a str, filename: A, confi
     let (front_matter_raw, article) = detect_front_matter(&input, &filename, &config)?;
     let parsed_front_matter: ParsedFrontMatter = match from_str(front_matter_raw) {
         Ok(s) => s,
-        Err(e) => return Err(Error::FrontMatter(format!("{:?}: Invalid Front Matter: {}", &filename.as_ref(), &e)))
+        Err(e) => return Err(TechouError::FrontMatter{issue: format!("{:?}: Invalid Front Matter: {}", &filename.as_ref(), &e)})
     };
 
     let ParsedFrontMatter { mut front_matter, meta } = parsed_front_matter;
@@ -65,6 +94,14 @@ pub fn parse_front_matter<'a, A: AsRef<Path>>(input: &'a str, filename: A, confi
     front_matter.created_timestamp = timestamp;
     front_matter.created = date_string;
     front_matter.date = date;
+    front_matter.date_info = DateInfo::from(date);
+
+    // Parse the description into html
+    let parser = Parser::new(&front_matter.description);
+
+    let mut html_buf = String::new();
+    html::push_html(&mut html_buf, parser);
+    front_matter.description_html = html_buf;
 
     Ok((front_matter, article))
 }
@@ -73,7 +110,7 @@ fn detect_front_matter<'a, A: AsRef<Path>>(input: &'a str, filename: A, config: 
     let separator = "\n---\n";
     let index = match input.find(separator) {
         Some(r) => r,
-        None => return Err(Error::FrontMatter(format!("{:?}: Missing Front Matter", &filename.as_ref())))
+        None => return Err(TechouError::FrontMatter{issue: format!("{:?}: Missing Front Matter", &filename.as_ref())})
     };
     let (f, a) = input.split_at(index);
     Ok((f, &a[separator.len()..]))
@@ -84,7 +121,7 @@ fn detect_date_time<A: AsRef<Path>>(input: &str, filename: A, config: &Config) -
         NaiveDate::parse_from_str(&input, &config.date_format).and_then(|e| {
             Ok(e.and_hms(10, 30, 30))
         })
-    }).map_err(|e| Error::FrontMatter(format!("{:?}: Invalid Date Format in Front Matter: {} {}", &filename.as_ref(), &input, &e)))?;
+    }).map_err(|e| TechouError::FrontMatter{issue: format!("{:?}: Invalid Date Format in Front Matter: {} {}", &filename.as_ref(), &input, &e)})?;
     Ok((parsed_date.format(&config.output_date_time_format).to_string(), parsed_date.timestamp(), parsed_date))
 }
 

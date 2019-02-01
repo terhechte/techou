@@ -12,8 +12,8 @@ pub fn slurp<T: AsRef<Path>>(path: T) -> Result<String> {
     use std::fs::File;
     use std::io::prelude::*;
     let mut buf = String::new();
-    let mut file = File::open(path)?;
-    file.read_to_string(&mut buf)?;
+    let mut file = File::open(&path).ctx(&path.as_ref())?;
+    file.read_to_string(&mut buf).ctx(&path.as_ref())?;
     Ok(buf)
 }
 
@@ -23,19 +23,20 @@ pub fn spit<A: AsRef<Path>>(path: A, contents: &str) -> Result<()> {
     use std::fs::OpenOptions;
     let path = path.as_ref();
     if let Some(parent) = path.parent() {
-        create_dir_all(&parent)?;
+        create_dir_all(&parent).ctx(parent)?;
     }
     let mut file = OpenOptions::new().write(true)
         .create_new(true)
-        .open(path)?;
-    Ok(file.write_all(contents.as_bytes())?)
+        .open(&path).ctx(&path)?;
+    Ok(file.write_all(contents.as_bytes()).ctx(path)?)
 }
 
 pub fn contents_of_directory<A: AsRef<Path>>(directory: A, file_type: &str) -> Result<Vec<PathBuf>> {
     let valid_type = OsStr::new(file_type);
     let mut matches: Vec<PathBuf> = Vec::new();
-    for entry in read_dir(directory.as_ref())? {
-        let entry = entry?;
+    let directory_path = directory.as_ref();
+    for entry in read_dir(directory_path).ctx(directory_path)? {
+        let entry = entry.ctx(directory_path)?;
         let path = entry.path();
         if path.is_dir() { continue }
         match path.extension() {
@@ -50,13 +51,14 @@ pub fn contents_of_directory<A: AsRef<Path>>(directory: A, file_type: &str) -> R
 }
 
 pub fn clear_directory<A: AsRef<Path>>(directory: A) -> Result<()> {
-    for entry in read_dir(directory.as_ref())? {
-        let entry = entry?;
+    let directory_path = directory.as_ref();
+    for entry in read_dir(directory_path).ctx(directory_path)? {
+        let entry = entry.ctx(directory_path)?;
         let path = entry.path();
         if path.is_dir() {
-            std::fs::remove_dir_all(path)?;
+            std::fs::remove_dir_all(&path).ctx(&path)?;
         } else {
-            std::fs::remove_file(path)?;
+            std::fs::remove_file(&path).ctx(&path)?;
         }
     }
     Ok(())

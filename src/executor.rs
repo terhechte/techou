@@ -51,7 +51,7 @@ fn catchable_execute(config: &Config) -> Result<()> {
 
     articles.sort_by(|a1, a2| a2.info.created_timestamp.partial_cmp(&a1.info.created_timestamp).unwrap());
 
-    let template_writer = Templates::new(&config.public_folder_path());
+    let template_writer = Templates::new(&config.public_folder_path()).unwrap();
 
     // write all posts + slug
     articles.par_iter().for_each(|article| {

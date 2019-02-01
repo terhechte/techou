@@ -2,7 +2,7 @@ use rss::{ ChannelBuilder, ItemBuilder, extension, Item };
 
 use crate::article::Article;
 use crate::config::{Config, RSS};
-use crate::error::{Result, Error};
+use crate::error::{Result, TechouError};
 use crate::io_utils::spit;
 
 use std::path::Path;
