@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="472px" height="112px" viewBox="0 0 472 112" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 52.6 (67491) - http://www.bohemiancoding.com/sketch -->
+    <title>techou</title>
+    <desc>Created with Sketch.</desc>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group-2-Copy">
+            <g id="techou">
+                <g id="Group-3" fill="#373737">
+                    <path d="M75.9746032,0.0419314958 L75.9746032,111.958069 C75.5866895,111.985863 75.1949956,112 74.8,112 L21.2,112 C12.2529871,112 5,104.747013 5,95.8 L5,16.2 C5,7.25298705 12.2529871,-1.90917406e-15 21.2,-3.55271368e-15 L74.8,0 C75.1949956,-7.25595184e-17 75.5866895,0.0141366118 75.9746032,0.0419314958 Z M79.2539683,0.619971223 C86.0352517,2.5549262 91,8.79767355 91,16.2 L91,95.8 C91,103.202326 86.0352517,109.445074 79.2539683,111.380029 L79.2539683,0.619971223 Z" id="Combined-Shape-Copy"></path>
+                    <rect id="Rectangle-Copy-11" x="0" y="89" width="12" height="5" rx="2.5"></rect>
+                    <rect id="Rectangle-Copy-12" x="0" y="79" width="12" height="5" rx="2.5"></rect>
+                    <rect id="Rectangle-Copy-13" x="0" y="69" width="12" height="5" rx="2.5"></rect>
+                    <rect id="Rectangle-Copy-14" x="0" y="59" width="12" height="5" rx="2.5"></rect>
+                    <rect id="Rectangle-Copy-15" x="0" y="48" width="12" height="5" rx="2.5"></rect>
+                    <rect id="Rectangle-Copy-16" x="0" y="38" width="12" height="5" rx="2.5"></rect>
+                    <rect id="Rectangle-Copy-17" x="0" y="28" width="12" height="5" rx="2.5"></rect>
+                    <rect id="Rectangle-Copy-18" x="0" y="18" width="12" height="5" rx="2.5"></rect>
+                </g>
+                <text id="てちょう-copy" font-family="mplus-2c-regular, M+ 2c" font-size="95" font-weight="normal" line-spacing="89" fill="#373737">
+                    <tspan x="103" y="105">てちょう</tspan>
+                </text>
+                <text id="手-帳" font-family="mplus-2c-regular, M+ 2c" font-size="40" font-weight="normal" line-spacing="43" fill="#FFFFFF">
+                    <tspan x="20.64" y="52.0001221">手</tspan>
+                    <tspan x="20.64" y="95.0001221">帳</tspan>
+                </text>
+            </g>
+        </g>
+    </g>
+</svg>
