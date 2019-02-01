@@ -7,7 +7,7 @@ use crate::io_utils::*;
 use crate::config::Config;
 use crate::article::Article;
 use crate::template::Templates;
-use crate::list::List;
+use crate::list::*;
 use crate::feeds;
 
 pub fn execute(ignore_errors: bool, config: &Config) -> Result<()> {
@@ -57,18 +57,20 @@ fn catchable_execute(config: &Config) -> Result<()> {
     articles.par_iter().for_each(|article| {
         let path = config.articles_folder_path().join(&article.slug);
         match template_writer.write_article(&article, &path, &config) {
-            Ok(_) => (), Err(e) => println!("Could not write article {}: {:?}", &article.filename, &e)
+            Ok(_) => println!("Wrote '{:?}'", &path),
+            Err(e) => println!("Could not write article {}: {:?}", &article.filename, &e)
         }
-        println!("Wrote '{:?}'", &path);
     });
 
     // write the index
     let path = config.output_folder_path().join("index.html");
     match template_writer.write_list(&List {
         title: "Main Index".to_string(),
-        articles: &articles
+        articles: &articles,
+        articles_by_date: articles_by_date(&articles)
     }, &path, &config) {
-        Ok(_) => (), Err(e) => println!("Could not write index {:?}: {:?}", &path, &e)
+        Ok(_) => println!("Wrote index: {:?}", &path),
+        Err(e) => println!("Could not write index {:?}: {:?}", &path, &e)
     }
 
     // todo: write per tag

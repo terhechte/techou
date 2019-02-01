@@ -19,6 +19,7 @@ Designed to be easy to hack on
 - [ ] consider 'https://github.com/nathan/pax' to compress JS in release and the css-.. crate for compressing CSS
 - [ ] tags
 - [ ] archives
+- [ ] support the better category / sitecategory system from rusttest1 instead of my year/month. that way I can also do tags etc
 - [ ] pagination
 - [ ] next / previous article
 - [ ] article recommendations
