@@ -21,9 +21,18 @@ Designed to be easy to hack on
 - [ ] archives
 - [ ] support the better category / sitecategory system from rusttest1 instead of my year/month. that way I can also do tags etc
 - [ ] pagination
+- [ ] add config to all templates, also allow meta information in config just like with articles.
 - [ ] next / previous article
+- [ ] have a function to get a link to a different article (maybe by article id?, might need an article id)
 - [ ] article recommendations
 - [ ] cleanup bin/techou.rs
 - [ ] cleanup server
 - [ ] use salsa to only re-render what has changed
 - [ ] some restructuring to make it easier usable as a library
+in this r code:
+``` R
+x <- 5
+y <- 6
+x + y
+```
+the last y is missing
