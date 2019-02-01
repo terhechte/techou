@@ -1,12 +1,28 @@
 yeah
 first.md
 <hr/>
-<h1>test</h1>
-<p>this is the actual article contents yeah.</p>
-<h2>test2</h2>
-<p>this is the actual article contents yeah.</p>
+<h1>test1234567</h1>
+<p>this isss the actual article contents yeah.</p>
+<h2>tests2</h2>
+<p>this is the actual article contents yeah.
+xxxx</p>
 
 <br/>
 Hello World
 <ul>
 </ul>
+
+<script language="Javascript">
+    var wsUri = (window.location.protocol=='https:'&&'wss://'||'ws://')+window.location.host + '/ws/';
+    let exampleSocket = new WebSocket(wsUri);
+    exampleSocket.onopen = function (event) {
+      exampleSocket.send("Connect"); 
+    };
+    exampleSocket.onmessage = function (event) {
+      //console.log(event.data);
+      if (event.data == "reload") {
+        document.location.reload();
+      }
+    }
+</script>
+    

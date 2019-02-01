@@ -1,6 +1,7 @@
 use crate::config::Config;
 
 use actix::prelude::*;
+//use actix::
 use actix_web::{
     fs, http, middleware, server, ws, App, Error, HttpRequest, HttpResponse
 };
@@ -20,6 +21,7 @@ pub fn auto_reload_code(config: &Config) -> String {
     exampleSocket.onmessage = function (event) {{
       //console.log(event.data);
       if (event.data == "reload") {{
+        //window.setTimeout(document.location.reload, 250);
         document.location.reload();
       }}
     }}
@@ -27,7 +29,14 @@ pub fn auto_reload_code(config: &Config) -> String {
     "#, &config.auto_reload_websocket_path)
 }
 
-struct ReloadWebSocketActor;
+#[derive(Message)]
+enum ReloadMessage {
+    Reload
+}
+
+struct ReloadWebSocketActor {
+    last_handle: Option<SpawnHandle>
+}
 
 impl Actor for ReloadWebSocketActor {
     type Context = ws::WebsocketContext<Self, AppState>;
@@ -37,6 +46,12 @@ impl Actor for ReloadWebSocketActor {
 }
 
 impl ReloadWebSocketActor {
+    fn new() -> Self {
+      ReloadWebSocketActor {
+          last_handle: None
+      }
+    }
+
     fn hb(&self, ctx: &mut <Self as Actor>::Context) {
         // check every 100ms
         ctx.run_interval(Duration::from_millis(100), |act, ctx| {
@@ -47,11 +62,31 @@ impl ReloadWebSocketActor {
             // one value, it is true, if we have more values, the last is also true
             // This way, we only reload once even if multiple `reload`s did make it into the iterator
             if iter.last() == Some(true) {
-                ctx.run_later(Duration::from_millis(250), |act, ctx| {
+                // If we have multiple updates, only the last one is valid
+                if let Some(handle) = act.last_handle.take() {
+                    let c = ctx.cancel_future(handle);
+                    println!("cancelled future: {}", c);
+                }
+                /*let handle = ctx.run_later(Duration::from_millis(250), |act, ctx| {
+                    println!("told to reload");
                     ctx.text("reload");
-                });
+                });*/
+                let handle = ctx.notify_later(ReloadMessage::Reload, Duration::from_millis(1000));
+                act.last_handle.replace(handle);
             }
         });
+    }
+}
+
+impl Handler<ReloadMessage> for ReloadWebSocketActor {
+    type Result = ();
+    fn handle(&mut self, msg: ReloadMessage, ctx: &mut Self::Context) {
+        match msg {
+            ReloadMessage::Reload => {
+                println!("told to reload");
+                ctx.text("reload");
+            }
+        }
     }
 }
 
@@ -77,7 +112,7 @@ pub fn run_file_server(reload_receiver: Receiver<bool>, config: &Config) {
     server::new(move || {
         App::with_state(AppState { state: receiver.clone() })
             .resource(&ws_path, |r| r.method(http::Method::GET).f(|req| {
-                ws::start(req, ReloadWebSocketActor)
+                ws::start(req, ReloadWebSocketActor::new())
             }))
             .handler(
                 "/",
