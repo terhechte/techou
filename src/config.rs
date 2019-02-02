@@ -6,7 +6,57 @@ use serde_derive::{Deserialize};
 use crate::io_utils::slurp;
 use crate::error::*;
 
-#[derive(Deserialize, Clone)]
+static DEFAULT_PROJECT_TOML: &str = r#"
+[Project]
+keywords = ["nam", "nom", "grah"]
+
+[Folders]
+# Where are your posts
+postsFolder = "posts"
+
+# Where should the static site be stored
+outputFolder = "html"
+
+# Where are the templates and public items
+publicFolder = "public"
+
+# The file and folders that should be copied over from within the public folder
+publicCopyFolders = ["css", "img", "js"]
+
+[Dates]
+# The input date format that should be used for your articles
+dateFormat = "%Y-%m-%d"
+# The input date time format. Has priority over the date format
+# dateTimeFormat = "%Y-%m-%d %H:%M:%S"
+
+[Server]
+# On which address to run the dev server
+serverAddress = "127.0.0.1:8001"
+
+# [RSS]
+# absoluteFeedAddress = "https://example.com/feed.rss"
+# title = "My Blog"
+# authorEmail = "john@doe.com"
+# authorName = "John Doe"
+
+# This is where you can add additional meta information.
+# they're available in all templates
+# [Meta]
+# twitter = "https://twitter.com/johndoe"
+"#;
+
+#[derive(Deserialize, Clone, Default, Debug)]
+#[serde(default, rename_all = "camelCase")]
+pub struct ConfigProject {
+    #[serde(default)]
+    pub keywords: Vec<String>,
+    #[serde(default)]
+    pub title: String,
+    #[serde(default)]
+    pub description: String,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ConfigFolders {
     /// The root folder of the project
@@ -61,7 +111,7 @@ impl Default for ConfigFolders {
     }
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Debug)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ConfigTemplates {
     pub article_template: String,
@@ -97,7 +147,7 @@ impl Default for ConfigServer {
     }
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Debug)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ConfigDates {
     pub date_format: String,
@@ -105,7 +155,7 @@ pub struct ConfigDates {
     pub output_date_time_format: String,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Debug)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ConfigServer {
     pub server_address: String, // usually "127.0.0.1:8001"
@@ -115,47 +165,48 @@ pub struct ConfigServer {
     pub auto_reload_websocket_path: String,
 }
 
-#[derive(Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[derive(Deserialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase", default)]
 pub struct ConfigRSS {
-    #[serde(default)]
     pub absolute_feed_address: String, // the absolute URL of the feed
-    #[serde(default)]
     pub title: String,
-    #[serde(default)]
     pub link: String,
-    #[serde(default)]
     pub description: String,
-    #[serde(default)]
     pub author_email: String,
-    #[serde(default)]
     pub author_name: String,
 }
 
 
 
-#[derive(Deserialize, Clone, Default)]
-#[serde(default)]
+#[derive(Deserialize, Clone, Default, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
+    /// Various Project Properties
+    #[serde(rename = "Project", default)]
+    pub project: ConfigProject,
+
     /// Folder configuration
+    #[serde(rename = "Folders", default)]
     pub folders: ConfigFolders,
 
     /// Template configuration
+    #[serde(rename = "Templates", default)]
     pub templates: ConfigTemplates,
 
     /// Date configuration
+    #[serde(rename = "Dates", default)]
     pub dates: ConfigDates,
 
     /// Server configuration
+    #[serde(rename = "Server", default)]
     pub server: ConfigServer,
 
     /// RSS
-    #[serde(default, alias = "RSS")]
+    #[serde(default, rename = "RSS")]
     pub rss: Option<ConfigRSS>,
 
     /// Meta
-    #[serde(default)]
+    #[serde(default, rename = "Meta")]
     pub meta: HashMap<String, String>
 }
 
@@ -213,5 +264,12 @@ title = "klaus"
         let parsed = Config::toml(&contents, &std::path::PathBuf::from("/tmp/test.toml")).unwrap();
         assert!(parsed.rss.is_some());
         assert_eq!(parsed.rss.unwrap().title, "klaus");
+    }
+
+    #[test]
+    fn test_default_project_toml() {
+        use crate::config::*;
+        let parsed = Config::toml(&DEFAULT_PROJECT_TOML, &std::path::PathBuf::from("/tmp/test.toml")).unwrap();
+        assert_eq!(parsed.project.keywords, vec!["nam", "nom", "grah"]);
     }
 }
