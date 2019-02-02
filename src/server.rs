@@ -26,7 +26,7 @@ pub fn auto_reload_code(config: &Config) -> String {
       }}
     }}
 </script>
-    "#, &config.auto_reload_websocket_path)
+    "#, &config.server.auto_reload_websocket_path)
 }
 
 #[derive(Message)]
@@ -102,11 +102,11 @@ struct AppState {
 pub fn run_file_server(reload_receiver: Receiver<bool>, config: &Config) {
     let sys = actix::System::new("techou");
 
-    let folder = config.output_folder_path().to_str()
+    let folder = config.folders.output_folder_path().to_str()
         .expect("Expect output folder to serve").to_string();
-    let ws_path = config.auto_reload_websocket_path.clone();
+    let ws_path = config.server.auto_reload_websocket_path.clone();
 
-    println!("Serving '{:?}' on {}", &folder, &config.server_address);
+    println!("Serving '{:?}' on {}", &folder, &config.server.server_address);
     let receiver = Arc::new(Mutex::new(reload_receiver));
 
     server::new(move || {
@@ -121,8 +121,8 @@ pub fn run_file_server(reload_receiver: Receiver<bool>, config: &Config) {
                     .show_files_listing())
             .finish()
     })
-        .bind(&config.server_address)
-        .expect(&format!("Can not bind to {}", &config.server_address))
+        .bind(&config.server.server_address)
+        .expect(&format!("Can not bind to {}", &config.server.server_address))
         .start();
 
     sys.run();

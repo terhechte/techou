@@ -41,7 +41,7 @@ fn main() {
     if should_watch {
         let innerConfig = config.clone();
         std::thread::spawn(move || {
-            trigger_on_change(&[&innerConfig.public_folder_path(), &innerConfig.posts_folder_path()], |path| {
+            trigger_on_change(&[&innerConfig.folders.public_folder_path(), &innerConfig.folders.posts_folder_path()], |path| {
                 match techou::executor::execute(true, &innerConfig) {
                     Err(e) => println!("Error: {:?}", &e),
                     _ => ()

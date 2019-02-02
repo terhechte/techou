@@ -29,10 +29,10 @@ fn catchable_execute(config: &Config) -> Result<()> {
 
     // Clean the old output folder, if it still exists.
     // We don't want to remove the folder, so that static servers still work
-    clear_directory(&config.output_folder_path())?;
+    clear_directory(&config.folders.output_folder_path())?;
 
-    println!("Root folder: {:?}", &config.root);
-    let files = contents_of_directory(config.posts_folder_path(), "md")?;
+    println!("Root folder: {:?}", &config.folders.root);
+    let files = contents_of_directory(config.folders.posts_folder_path(), "md")?;
     let mut articles: Vec<Article> = files.par_iter().filter_map(|path| {
         let contents = match slurp(path) {
             Ok(c) => c, Err(e) => {
@@ -51,11 +51,11 @@ fn catchable_execute(config: &Config) -> Result<()> {
 
     articles.sort_by(|a1, a2| a2.info.created_timestamp.partial_cmp(&a1.info.created_timestamp).unwrap());
 
-    let template_writer = Templates::new(&config.public_folder_path()).unwrap();
+    let template_writer = Templates::new(&config.folders.public_folder_path()).unwrap();
 
     // write all posts + slug
     articles.par_iter().for_each(|article| {
-        let path = config.articles_folder_path().join(&article.slug);
+        let path = config.folders.articles_folder_path().join(&article.slug);
         match template_writer.write_article(&article, &path, &config) {
             Ok(_) => println!("Wrote '{:?}'", &path),
             Err(e) => println!("Could not write article {}: {:?}", &article.filename, &e)
@@ -63,7 +63,7 @@ fn catchable_execute(config: &Config) -> Result<()> {
     });
 
     // write the index
-    let path = config.output_folder_path().join("index.html");
+    let path = config.folders.output_folder_path().join("index.html");
     match template_writer.write_list(&List {
         title: "Main Index".to_string(),
         articles: &articles,
@@ -78,12 +78,10 @@ fn catchable_execute(config: &Config) -> Result<()> {
     // todo: write per year / month
 
     // Write the feed
-    if let Some(ref rss) = &config.rss_settings {
-        feeds::write_articles_rss(&articles, &config.output_folder_path().join("feed.rss"), &config, rss)?;
-    }
+    feeds::write_articles_rss(&articles, &config.folders.output_folder_path().join("feed.rss"), &config)?;
 
     // Write the assets
-    copy_items_to_directory(&config.public_copy_folders, &config.public_folder_path(), &config.output_folder_path())?;
+    copy_items_to_directory(&config.folders.public_copy_folders, &config.folders.public_folder_path(), &config.folders.output_folder_path())?;
 
     Ok(())
 }

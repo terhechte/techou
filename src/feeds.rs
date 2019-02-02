@@ -1,13 +1,16 @@
 use rss::{ ChannelBuilder, ItemBuilder, extension, Item };
 
 use crate::article::Article;
-use crate::config::{Config, RSS};
+use crate::config::{Config, ConfigRSS};
 use crate::error::{Result, TechouError};
 use crate::io_utils::spit;
 
 use std::path::Path;
 
-pub fn write_articles_rss<A: AsRef<Path>>(articles: &Vec<Article>, to_path: A, config: &Config, rss: &RSS) -> Result<()> {
+pub fn write_articles_rss<A: AsRef<Path>>(articles: &Vec<Article>, to_path: A, config: &Config) -> Result<()> {
+    let rss = match &config.rss {
+        Some(rss) => rss, None => return Ok(())
+    };
     let items: Vec<Item> = articles.iter().map(|article| {
         ItemBuilder::default()
             .itunes_ext(extension::itunes::ITunesItemExtension::default())
