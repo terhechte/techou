@@ -19,11 +19,29 @@ fn main() {
         .arg(Arg::with_name("project-file").short("f").value_name("PROJECT-FILE").required(false))
         .arg(Arg::with_name("watch").short("w").long("watch").required(false))
         .arg(Arg::with_name("serve").short("s").long("serve").required(false))
+        .subcommand(SubCommand::with_name("create")
+            .about("Create new techou project (project.toml)")
+            .arg(Arg::with_name("filename")
+                .value_name("FILENAME")
+                .help("Alternative name to project.toml ")
+                .required(false)))
         .get_matches();
     let root_dir = matches.value_of("project-dir").unwrap_or(".");
     let project_file = matches.value_of("project-file").unwrap_or("");
     let should_watch = matches.is_present("watch");
     let should_serve = matches.is_present("serve");
+
+    if let Some(matches) = matches.subcommand_matches("create") {
+        if project_file.len() > 0 { panic!("You can't use --project-file / -f together with 'create'") }
+        let new_project_file = matches.value_of("filename").unwrap_or("project.toml");
+        let path = path::PathBuf::from(root_dir).join(new_project_file);
+        if path.exists() {
+            panic!("File {:?} already exists. Cowardly refusing to overwrite", &path);
+        }
+        techou::io_utils::spit(&path, techou::config::Config::exampleConfig());
+        println!("New Config '{:?}' created.", &path);
+        ::std::process::exit(0);
+    }
 
     let config = match project_file.len() {
         0 => techou::config::Config::new(root_dir),

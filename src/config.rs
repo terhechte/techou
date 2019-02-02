@@ -234,6 +234,10 @@ impl Config {
         let contents = slurp(toml_file)?;
         Config::toml(&contents, &parent)
     }
+
+    pub fn exampleConfig() -> &'static str {
+        DEFAULT_PROJECT_TOML
+    }
 }
 
 #[cfg(test)]
