@@ -88,7 +88,7 @@ pub fn parse_front_matter<'a, A: AsRef<Path>>(input: &'a str, filename: A, confi
 
     let ParsedFrontMatter { mut front_matter, meta } = parsed_front_matter;
 
-    let (date_string, timestamp, date) = detect_date_time(&front_matter.created, &filename, &config)?;
+    let (date_string, timestamp, date) = detect_date_time(&front_matter.created, &config)?;
 
     front_matter.meta = meta;
     front_matter.created_timestamp = timestamp;
@@ -116,12 +116,12 @@ fn detect_front_matter<'a, A: AsRef<Path>>(input: &'a str, filename: A, config: 
     Ok((f, &a[separator.len()..]))
 }
 
-fn detect_date_time<A: AsRef<Path>>(input: &str, filename: A, config: &Config) -> Result<(String, i64, NaiveDateTime)> {
+pub fn detect_date_time(input: &str, config: &Config) -> Result<(String, i64, NaiveDateTime)> {
     let parsed_date = NaiveDateTime::parse_from_str(&input, &config.dates.date_time_format).or_else(|_| {
         NaiveDate::parse_from_str(&input, &config.dates.date_format).and_then(|e| {
             Ok(e.and_hms(10, 30, 30))
         })
-    }).map_err(|e| TechouError::FrontMatter{issue: format!("{:?}: Invalid Date Format in Front Matter: {} {}", &filename.as_ref(), &input, &e)})?;
+    }).map_err(|e| TechouError::FrontMatter{issue: format!("{:?}: Invalid Date Format in Front Matter: {}", &input, &e)})?;
     Ok((parsed_date.format(&config.dates.output_date_time_format).to_string(), parsed_date.timestamp(), parsed_date))
 }
 

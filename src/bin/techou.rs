@@ -19,6 +19,12 @@ fn main() {
         .arg(Arg::with_name("project-file").short("f").value_name("PROJECT-FILE").required(false))
         .arg(Arg::with_name("watch").short("w").long("watch").required(false))
         .arg(Arg::with_name("serve").short("s").long("serve").required(false))
+        .subcommand(SubCommand::with_name("new")
+            .about("Write a new post")
+            .arg(Arg::with_name("filename")
+                .value_name("FILENAME")
+                .help("Optional filename. Otherwise techou will generate one")
+                .required(false)))
         .subcommand(SubCommand::with_name("create")
             .about("Create new techou project (project.toml)")
             .arg(Arg::with_name("filename")
@@ -49,6 +55,90 @@ fn main() {
             Ok(c) => c, Err(e) => panic!("Invalid Project File {:?}: {:?}", &project_file, &e)
         }
     };
+
+    if let Some(matches) = matches.subcommand_matches("new") {
+        let flags = &[
+            ("title", "The title of this post", None),
+            ("date", "The date/time for this post", Some("2016.1.1")),
+            ("filename", "The filename for this post", Some("filename"))
+        ];
+        use std::io;
+        #[derive(Default)]
+        struct Options {
+            filename: String,
+            title: String,
+            date: String,
+            tags: Vec<String>
+        }
+        let mut options: Options = Default::default();
+        for (key, title, default_value) in flags {
+            println!("{}", &title);
+            if let Some(default) = default_value {
+                println!("(Default is `{}`)", match default {
+                    &"filename" => &options.filename.as_str(),
+                    _ => default
+                });
+            }
+            loop {
+                let mut input = String::new();
+                match io::stdin().read_line(&mut input) {
+                    Ok(n) if n == 0 => {
+                        println!("You have to enter a value");
+                        continue;
+                    },
+                    Ok(n) => {
+                        match key {
+                            &"title" => {
+                                // FIXME: there should be a config option with format syntax that
+                                // allows the user to define how to generate post names
+                                options.filename = input.to_lowercase()
+                                    .replace(|c: char| !c.is_ascii_alphanumeric() && !c.is_ascii_whitespace(), "")
+                                    .split_whitespace().collect::<Vec<&str>>().join("-");
+                                options.filename.push_str(".md");
+                                options.title = input;
+                                break;
+                            },
+                            &"date" => {
+                                match techou::front_matter::detect_date_time(&input, &config) {
+                                    Ok(d) => options.date = d.0,
+                                    Err(e) => println!("Invalid Date / Time Format. [Hint: {}]", &config.dates.date_format),
+                                }
+                                continue;
+                            },
+                            &"filename" => {
+                                options.filename = input;
+                                break;
+                            },
+                            _ => panic!("Invalid key {}", &key)
+                        }
+                    },
+                    Err(error) =>  {
+                        println!("error: {}", error);
+                        continue;
+                    }
+                }
+            }
+        }
+        // Finally we can write it
+        let post_path = config.folders.posts_folder_path().join(&options.filename);
+        if post_path.exists() {
+            println!("Cowardly refusing to override existing post {:?}", &post_path);
+            ::std::process::exit(0);
+        }
+        // FIXME: This should come from articles
+        let content = format!(r#"[frontMatter]
+title = "{}"
+tags = []
+created = "{}"
+description = ""
+published = false
+---
+
+# Hello World"#, &options.title, &options.date);
+        techou::io_utils::spit(&post_path, &content);
+        println!("Created new post {:?}", &post_path);
+        ::std::process::exit(0);
+    }
 
     match techou::executor::execute(false, &config) {
         Err(e) => println!("Error: {:?}", &e),
