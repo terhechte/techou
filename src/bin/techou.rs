@@ -75,8 +75,8 @@ fn main() {
             println!("{}", &title);
             if let Some(default) = default_value {
                 println!("(Default is `{}`)", match default {
-                    &"filename" => &options.filename.as_str(),
-                    _ => default
+                    &"filename" => options.filename,
+                    _ => default.to_string()
                 });
             }
             loop {
