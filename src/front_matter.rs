@@ -75,7 +75,7 @@ impl FrontMatter {
 #[serde(rename_all = "camelCase")]
 struct ParsedFrontMatter {
     front_matter: FrontMatter,
-    #[serde(default, skip)]
+    #[serde(default)]
     meta: HashMap<String, String>
 }
 
@@ -164,6 +164,7 @@ this is the actual article contents yeah."#;
         assert!(result.is_ok());
         let (fm, _) = result.unwrap();
         assert_eq!(fm.title, "Hello World");
+        assert_eq!(fm.meta.get("author"), Some(&"Benedikt Terhechte".to_string()));
     }
 
     #[test]
