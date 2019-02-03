@@ -14,6 +14,9 @@ keywords = ["nam", "nom", "grah"]
 # Where are your posts
 postsFolder = "posts"
 
+# Where are additional pages (if you intend to write them)
+# pagesFolder = "pages"
+
 # Where should the static site be stored
 outputFolder = "html"
 
@@ -24,7 +27,7 @@ publicFolder = "public"
 publicCopyFolders = ["css", "img", "js"]
 
 [Dates]
-# The input date format that should be used for your articles
+# The input date format that should be used for your posts and apges
 dateFormat = "%Y-%m-%d"
 # The input date time format. Has priority over the date format
 # dateTimeFormat = "%Y-%m-%d %H:%M:%S"
@@ -65,25 +68,32 @@ pub struct ConfigFolders {
 
     /// Folders on Disk
     pub posts_folder: String,
+    pub pages_folder: String,
     pub output_folder: String,
     pub public_folder: String,
     pub public_copy_folders: Vec<String>,
 
     /// Folder names in the generated structure
-    pub articles_folder_name: String,
+    pub posts_folder_name: String,
     pub tags_folder_name: String,
+    pub pages_folder_name: String,
 }
 
 impl ConfigFolders {
     pub fn posts_folder_path(&self) -> PathBuf {
         self.root.join(&self.posts_folder)
     }
+    pub fn pages_folder_path(&self) -> PathBuf { self.root.join(&self.pages_folder) }
     pub fn output_folder_path(&self) -> PathBuf {
         self.root.join(&self.output_folder)
     }
 
-    pub fn articles_folder_path(&self) -> PathBuf {
-        self.output_folder_path().join(&self.articles_folder_name)
+    pub fn output_posts_folder_path(&self) -> PathBuf {
+        self.output_folder_path().join(&self.posts_folder_name)
+    }
+
+    pub fn output_pages_folder_path(&self) -> PathBuf {
+        self.output_folder_path().join(&self.pages_folder_name)
     }
 
     pub fn tags_folder_path(&self) -> PathBuf {
@@ -101,11 +111,13 @@ impl Default for ConfigFolders {
         ConfigFolders {
             root,
             posts_folder: "posts".to_string(),
+            pages_folder: "pages".to_string(),
             output_folder: "html".to_string(),
             public_folder: "public".to_string(),
             public_copy_folders: vec!["css".to_string(), "img".to_string()],
 
-            articles_folder_name: "articles".to_string(),
+            posts_folder_name: "posts".to_string(),
+            pages_folder_name: "pages".to_string(),
             tags_folder_name: "tags".to_string(),
         }
     }
@@ -114,14 +126,16 @@ impl Default for ConfigFolders {
 #[derive(Deserialize, Clone, Debug)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ConfigTemplates {
-    pub article_template: String,
+    pub post_template: String,
+    pub page_template: String,
     pub list_template: String,
 }
 
 impl Default for ConfigTemplates {
     fn default() -> Self {
         ConfigTemplates {
-            article_template: "article.html".to_string(),
+            post_template: "post.html".to_string(),
+            page_template: "page.html".to_string(),
             list_template: "list.html".to_string(),
         }
     }

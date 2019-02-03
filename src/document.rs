@@ -7,12 +7,13 @@ use crate::config::Config;
 use crate::utils;
 use crate::parse_event_handlers::{section::SectionEventHandler, highlight::HighlightEventHandler, EventHandler, ParseResult};
 
+use rayon::prelude::*;
 use chrono::Datelike;
 use pulldown_cmark::{Event, Parser, Tag, html};
 use serde_derive::{Serialize};
 
 #[derive(Serialize, Debug)]
-pub struct Article {
+pub struct Document {
     pub identifier: String,
     pub filename: String,
     pub info: FrontMatter,
@@ -21,8 +22,8 @@ pub struct Article {
     pub sections: Vec<(i32, String)>
 }
 
-impl Article {
-    pub fn new<A: AsRef<Path>>(contents: &str, path: A, config: &Config) -> Result<Article> {
+impl Document {
+    pub fn new<A: AsRef<Path>>(contents: &str, path: A, config: &Config) -> Result<Document> {
         let filename = path.as_ref().file_name().and_then(|e| e.to_str())
             .ok_or(TechouError::Other{issue: format!("Path {:?} has no filename. Can't read it.", path.as_ref())})?
             .to_string();
@@ -30,11 +31,36 @@ impl Article {
         let (info, article) = parse_front_matter(&contents, &path.as_ref(), &config)?;
         let slug = slug_from_frontmatter(&info);
         let ParseResult { content, sections } = markdown_to_html(article);
-        Ok(Article { identifier, filename, info, slug, content, sections } )
+        Ok(Document { identifier, filename, info, slug, content, sections } )
     }
 }
 
+pub fn documents_in_folder<A: AsRef<Path>>(folder: A, config: &Config) -> Result<Vec<Document>> {
+    use crate::io_utils::{slurp, contents_of_directory};
+    let files = contents_of_directory(folder.as_ref(), "md")?;
+    let mut posts: Vec<Document> = files.par_iter().filter_map(|path| {
+        let contents = match slurp(path) {
+            Ok(c) => c, Err(e) => {
+                println!("Can't read {:?}: {:?}", &path, &e);
+                return None;
+            }
+        };
+        let post = match Document::new(&contents, &path, &config) {
+            Ok(a) => a, Err(e) => {
+                println!("Invalid Format {:?}: {:?}", &path, &e);
+                return None;
+            }
+        };
+        Some(post)
+    }).collect();
+    Ok(posts)
+}
+
 fn slug_from_frontmatter(front_matter: &FrontMatter) -> String {
+    // If we have a slug in the meta attributes, use that (Document this!)
+    if let Some(slug) = front_matter.meta.get("slug") {
+        return slug.clone();
+    }
     // make lowercase ascii-only title
     let title: String = front_matter.title.to_lowercase()
         .replace(|c: char| !c.is_ascii_alphanumeric() && !c.is_ascii_whitespace(), "")
@@ -78,7 +104,7 @@ fn markdown_to_html(markdown: &str) -> ParseResult {
 mod tests {
     #[test]
     fn test_sections() {
-        use crate::article;
+        use crate::document;
         let contents = r#"
 # Section 1
 Hello world
@@ -86,7 +112,7 @@ Hello world
 More text
 ## Another section
 # Final section"#;
-        let result = article::markdown_to_html(&contents);
+        let result = document::markdown_to_html(&contents);
         assert_eq!(result.sections.len(), 4);
         assert_eq!(result.sections[0].1, "Section 1");
     }
@@ -94,7 +120,7 @@ More text
     #[test]
     fn test_naming() {
         use crate::front_matter;
-        use crate::article;
+        use crate::document;
         let contents = r#"
 [frontMatter]
 title = "Hello World"
@@ -106,13 +132,13 @@ published = true
 ---
 this is the actual article contents yeah."#;
         let (frontmatter, _) = front_matter::parse_front_matter(&contents, "yeah.md", &Default::default()).unwrap();
-        let slug = article::slug_from_frontmatter(&frontmatter);
+        let slug = document::slug_from_frontmatter(&frontmatter);
         assert_eq!(slug, "2009-12-30-hello-world.html");
     }
 
     #[test]
     fn test_syntax() {
-        use crate::article;
+        use crate::document;
         let contents = r#"
 # Section 1
 `printf()`
@@ -124,7 +150,7 @@ if let Some(x) = variable {
 }
 
 "#;
-        let result = article::markdown_to_html(&contents);
+        let result = document::markdown_to_html(&contents);
         assert!(result.content.contains("source rust"));
     }
 }

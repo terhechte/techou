@@ -1,4 +1,4 @@
-mod article;
+mod document;
 mod list;
 mod utils;
 mod error;

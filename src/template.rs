@@ -4,7 +4,7 @@ use tera::{Tera, Context};
 use serde::Serialize;
 
 use crate::error::*;
-use crate::article::Article;
+use crate::document::Document;
 use crate::list::List;
 use crate::io_utils::spit;
 use crate::config::Config;
@@ -30,17 +30,22 @@ impl Templates {
         })
     }
 
-    pub fn write_article<A: AsRef<Path>>(&self, article: &Article, path: A, config: &Config) -> Result<()> {
-        let mut rendered = self.tera.render(&config.templates.article_template, &article)
-            .ctx(path.as_ref())?;
-        if config.server.auto_reload_browser_via_websocket_on_change {
-            rendered.push_str(&auto_reload_code(&config));
-        }
-        spit(path.as_ref(), &rendered)
+    pub fn write_post<A: AsRef<Path>>(&self, post: &Document, path: A, config: &Config) -> Result<()> {
+        self.write_item(&config.templates.post_template, post, path, config)
     }
 
-    pub fn write_list<'a, A: AsRef<Path>>(&self, list: &'a List<'a>, path: A, config: &Config) -> Result<()> {
-        let mut rendered = self.tera.render(&config.templates.list_template, &list)
+    pub fn write_page<A: AsRef<Path>>(&self, post: &Document, path: A, config: &Config) -> Result<()> {
+        self.write_item(&config.templates.page_template, post, path, config)
+    }
+
+    pub fn write_list<'a, A: AsRef<Path>>(&self, list: &'a List<'a>, path: A, config: &Config)
+        -> Result<()> {
+        self.write_item(&config.templates.list_template, list, path, config)
+    }
+
+    fn write_item<'a, A: AsRef<Path>, I: Serialize>(&self, template_name: &str, item: &'a I, path: A, config: &Config)
+    -> Result<()> {
+        let mut rendered = self.tera.render(template_name, &item)
             .ctx(path.as_ref())?;
         if config.server.auto_reload_browser_via_websocket_on_change {
             rendered.push_str(&auto_reload_code(&config));
