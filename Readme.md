@@ -17,6 +17,7 @@ Designed to be easy to hack on
 - [ ] commandline tool to create new posts
 - [ ] have 'release' flag to build with 'published' only, no websockets, and maybe even parcel or webpack?
 - [ ] consider 'https://github.com/nathan/pax' to compress JS in release and the css-.. crate for compressing CSS
+- [ ] when there is a project.toml, it should be used in stead of just using "."
 - [ ] tags
 - [ ] archives
 - [ ] support the better category / sitecategory system from rusttest1 instead of my year/month. that way I can also do tags etc

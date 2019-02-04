@@ -9,6 +9,8 @@ use notify::RecursiveMode::*;
 
 use clap::{Arg, App, SubCommand};
 
+use chrono::{naive::NaiveDate, Local, DateTime};
+
 extern crate techou;
 
 fn main() {
@@ -57,9 +59,11 @@ fn main() {
     };
 
     if let Some(matches) = matches.subcommand_matches("new") {
+        let local: DateTime<Local> = Local::now();
+        let formatted = local.format(&config.dates.date_time_format).to_string();
         let flags = &[
             ("title", "The title of this post", None),
-            ("date", "The date/time for this post", Some("2016.1.1")),
+            ("date", "The date/time for this post", Some(formatted.as_str())),
             ("filename", "The filename for this post", Some("filename"))
         ];
         use std::io;
@@ -72,41 +76,51 @@ fn main() {
         }
         let mut options: Options = Default::default();
         for (key, title, default_value) in flags {
-            println!("{}", &title);
-            if let Some(default) = default_value {
-                println!("(Default is `{}`)", match default {
-                    &"filename" => options.filename,
-                    _ => default.to_string()
-                });
+            println!("# {}", &title);
+            let default = default_value.map(|d| match d {
+                "filename" => options.filename.clone(),
+                _ => d.to_string()
+            });
+            if let Some(ref default) = default {
+                println!("  (Default is `{}`)", &default);
             }
             loop {
                 let mut input = String::new();
-                match io::stdin().read_line(&mut input) {
-                    Ok(n) if n == 0 => {
+                let res = io::stdin().read_line(&mut input);
+                let mut trimmed = input.trim().to_string();
+                match (&default, trimmed.len()) {
+                    (Some(ref d), n) if n == 0 => trimmed = d.clone(),
+                    _ => ()
+                }
+                match res {
+                    Ok(_) if trimmed.len() == 0 => {
                         println!("You have to enter a value");
                         continue;
                     },
-                    Ok(n) => {
+                    Ok(_) => {
                         match key {
                             &"title" => {
                                 // FIXME: there should be a config option with format syntax that
                                 // allows the user to define how to generate post names
-                                options.filename = input.to_lowercase()
+                                options.filename = trimmed.to_lowercase()
                                     .replace(|c: char| !c.is_ascii_alphanumeric() && !c.is_ascii_whitespace(), "")
                                     .split_whitespace().collect::<Vec<&str>>().join("-");
                                 options.filename.push_str(".md");
-                                options.title = input;
+                                options.title = trimmed;
                                 break;
                             },
                             &"date" => {
-                                match techou::front_matter::detect_date_time(&input, &config) {
-                                    Ok(d) => options.date = d.0,
-                                    Err(e) => println!("Invalid Date / Time Format. [Hint: {}]", &config.dates.date_format),
+                                match techou::front_matter::detect_date_time(&trimmed, &config) {
+                                    Ok(d) => {
+                                        options.date = d.0;
+                                        break;
+                                    },
+                                    Err(e) => println!("Invalid Date / Time Format. [Hint: {}]\n{}", &config.dates.date_format, e),
                                 }
                                 continue;
                             },
                             &"filename" => {
-                                options.filename = input;
+                                options.filename = trimmed;
                                 break;
                             },
                             _ => panic!("Invalid key {}", &key)
@@ -121,6 +135,7 @@ fn main() {
         }
         // Finally we can write it
         let post_path = config.folders.posts_folder_path().join(&options.filename);
+        println!("a: {}, b: {:?}", &options.filename, post_path);
         if post_path.exists() {
             println!("Cowardly refusing to override existing post {:?}", &post_path);
             ::std::process::exit(0);
@@ -203,5 +218,13 @@ fn trigger_on_change<A: AsRef<path::Path>, F>(folders: &[A], closure: F)
             }
             _ => {}
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_splitting() {
+        assert_eq!(1, 0);
     }
 }
