@@ -14,8 +14,8 @@ Designed to be easy to hack on
 - [x] Use `err-ctx` crate: https://crates.io/crates/err-ctx
 - [ ] if therr're rendering errors, end them via websocket to the browser, so that they can be displayed in a small dark bottom-bar in the rendered site...
 - [ ] if the terminal supports colors, use that
-- [ ] commandline tool to create new posts
-- [ ] have 'release' flag to build with 'published' only, no websockets, and maybe even parcel or webpack?
+- [x] commandline tool to create new posts
+- [x] have 'release' flag to build with 'published' only, no websockets, and maybe even parcel or webpack?
 - [ ] consider 'https://github.com/nathan/pax' to compress JS in release and the css-.. crate for compressing CSS
 - [ ] when there is a project.toml, it should be used in stead of just using "."
 - [ ] tags

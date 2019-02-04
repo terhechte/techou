@@ -51,12 +51,15 @@ fn main() {
         ::std::process::exit(0);
     }
 
-    let config = match project_file.len() {
+    let mut config = match project_file.len() {
         0 => techou::config::Config::new(root_dir),
         _ => match techou::config::Config::file(project_file) {
             Ok(c) => c, Err(e) => panic!("Invalid Project File {:?}: {:?}", &project_file, &e)
         }
     };
+
+    // If the server is on, the user is debugging, and we perform the auto reload
+    config.server.auto_reload_browser_via_websocket_on_change = should_serve;
 
     if let Some(matches) = matches.subcommand_matches("new") {
         let local: DateTime<Local> = Local::now();

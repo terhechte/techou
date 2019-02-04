@@ -155,7 +155,7 @@ impl Default for ConfigServer {
     fn default() -> Self {
         ConfigServer {
             server_address: "127.0.0.1:8001".to_string(),
-            auto_reload_browser_via_websocket_on_change: true,
+            auto_reload_browser_via_websocket_on_change: false,
             auto_reload_websocket_path: "/ws/".to_string(),
         }
     }
