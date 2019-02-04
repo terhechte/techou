@@ -36,4 +36,10 @@ x <- 5
 y <- 6
 x + y
 ```
-the last y is missing
+the last y is missing. this seems to be a syntect issue. as the following also happens
+``` R
+x + y
+y + z
+x + a
+```
+y, z, a on the right side never appear either

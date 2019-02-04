@@ -6,8 +6,6 @@ use syntect::highlighting::{ThemeSet, Style};
 use syntect::parsing::{SyntaxSet,ParseState};
 use syntect::html::{ClassStyle,tokens_to_classed_html};
 
-//use syntect::*;
-
 pub struct HighlightEventHandler {
     next_text_is_code: bool,
     language: String,

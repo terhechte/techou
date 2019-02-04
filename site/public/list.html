@@ -1,6 +1,6 @@
 <title>{{ title }}</title>
 <ul>
-{% for article in articles -%}
+{% for article in posts -%}
   <li><a href="{{ article.slug }}">{{ article.info.title }}</a></li>
 {%- endfor %}
 </ul>

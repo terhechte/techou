@@ -151,6 +151,7 @@ if let Some(x) = variable {
 
 "#;
         let result = document::markdown_to_html(&contents);
+        // Test for the CSS classes
         assert!(result.content.contains("source rust"));
     }
 }

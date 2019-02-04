@@ -221,10 +221,3 @@ fn trigger_on_change<A: AsRef<path::Path>, F>(folders: &[A], closure: F)
     }
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn test_splitting() {
-        assert_eq!(1, 0);
-    }
-}

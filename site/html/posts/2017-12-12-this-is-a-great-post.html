@@ -1,0 +1,31 @@
+yeah
+this-is-a-great-post.md
+<hr/>
+<h1>Hello World<span id="header-section-1"></span></h1>
+
+<br/>
+this is a great post
+<ul>
+</ul>
+
+<div id="sections">
+	
+	<h3><a href="#header-section-1">Hello World</a></h3>
+	
+</div>
+
+<script language="Javascript">
+    var wsUri = (window.location.protocol=='https:'&&'wss://'||'ws://')+window.location.host + '/ws/';
+    let exampleSocket = new WebSocket(wsUri);
+    exampleSocket.onopen = function (event) {
+      exampleSocket.send("Connect"); 
+    };
+    exampleSocket.onmessage = function (event) {
+      //console.log(event.data);
+      if (event.data == "reload") {
+        //window.setTimeout(document.location.reload, 250);
+        document.location.reload();
+      }
+    }
+</script>
+    
