@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 
 use crate::document::Document;
 use crate::config::Config;
+use rayon::prelude::*;
 
 #[derive(Serialize, Debug)]
 pub struct Year<'a> {
@@ -34,12 +35,64 @@ impl<'a> From<(u32, Vec<&'a Document>)> for Month<'a> {
     }
 }
 
+/*
+what I want the template to have: index
+global:
+    - config
+    - all articles
+    - all pages
+    - all tags (+ the articles for the tags)
+    - the articles-by-year
+index:
+- title
+- articles
+- next page + title
+- previous page + title
+*/
+
+#[derive(Serialize, Debug)]
+pub struct DocumentContext<'a> {
+    pub pages: &'a Vec<Document>,
+    pub posts: &'a Vec<Document>,
+    pub posts_by_date: Vec<Year<'a>>
+}
+
+#[derive(Serialize, Debug)]
+pub struct TemplateContext<'a, T> {
+    config: &'a Config,
+    posts: DocumentContext<'a>,
+    content: &'a T,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct Page {
+    pub index: usize,
+    pub title: String,
+    pub items: usize
+}
+
+#[derive(Serialize, Debug, Default)]
+pub struct Pagination {
+    pub current: usize,
+    pub next: Option<Page>,
+    pub previous: Option<Page>
+}
+
 #[derive(Serialize, Debug)]
 pub struct List<'a> {
-    pub title: String,
-    pub posts: &'a Vec<Document>,
-    pub posts_by_date: Vec<Year<'a>>,
-    pub pages: &'a Vec<Document>
+    pub title: &'a str,
+    pub posts: &'a [Document],
+    pub pagination: Pagination
+}
+
+impl<'a> List<'a> {
+    pub fn index(title: &'a str, posts: &'a [Document]) -> Self {
+        List {
+            title: title,
+            posts: posts,
+            pagination: Default::default()
+        }
+    }
 }
 
 pub fn posts_by_date<'a>(posts: &'a Vec<Document>) -> Vec<Year<'a>> {

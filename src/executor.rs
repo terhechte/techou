@@ -56,17 +56,44 @@ fn catchable_execute(config: &Config) -> Result<()> {
         }
     });
 
-    // write the index
-    let path = config.folders.output_folder_path().join("index.html");
-    match template_writer.write_list(&List {
-        title: "Main Index".to_string(),
-        posts: &posts,
-        posts_by_date: posts_by_date(&posts),
-        pages: &pages
-    }, &path, &config) {
-        Ok(_) => println!("Wrote index: {:?}", &path),
-        Err(e) => println!("Could not write index {:?}: {:?}", &path, &e)
+    /*let chunks = &posts.into_par_iter().chunks(items_per_page);
+    let mut state: (Option<Page>, Option<Page>) = (None, None);
+    fn page_from(index: usize, items: &[Document]) -> Page {
+        let (title, items) = (format!("Index - Page {}", index + 1), items.len());
+        let current_page = Page { title, index, items };
+    }*/
+    let mut state: (Option<Page>, Option<Page>) = (None, None);
+    let mut iter = posts.chunks(5).enumerate().peekable();
+    loop {
+        let (index, chunk) = match iter.next() {
+            Some(o) => o,
+            None => break
+        };
+    //for (index, chunk) in iter {
+        let title = format!("Index - Page {}", index);
+        state.0 = iter.peek().map(|(index, chunk)| {
+            Page { title: format!("Index - Page {}", index + 1), index: *index, items: chunk.len() }
+        });
+        let pagination = Pagination {
+            current: index,
+            next: state.0.take(),
+            previous: state.1.take()
+        };
+        let path = config.folders.output_folder_path().join("index.html");
+        match template_writer.write_list(&List { title: &title, posts: chunk, pagination}, &path, &config) {
+            Ok(_) => println!("Wrote index: {:?}", &path),
+            Err(e) => println!("Could not write index {:?}: {:?}", &path, &e)
+        }
+        state.1 = Some(Page { title: title, index: index, items: chunk.len()});
     }
+
+    /*for (index, chunk) in &posts.iter().chunks(3).enumerate() {
+        let path = config.folders.output_folder_path().join("index.html");
+        match template_writer.write_list(&List::index("Index", &posts), &path, &config) {
+            Ok(_) => println!("Wrote index: {:?}", &path),
+            Err(e) => println!("Could not write index {:?}: {:?}", &path, &e)
+        }
+    }*/
 
     // todo: write per tag
 

@@ -1,7 +1,7 @@
 use std::env;
 use std::path::PathBuf;
 use std::collections::HashMap;
-use serde_derive::{Deserialize};
+use serde_derive::{Serialize, Deserialize};
 
 use crate::io_utils::slurp;
 use crate::error::*;
@@ -48,7 +48,7 @@ serverAddress = "127.0.0.1:8001"
 # twitter = "https://twitter.com/johndoe"
 "#;
 
-#[derive(Deserialize, Clone, Default, Debug)]
+#[derive(Serialize, Deserialize, Clone, Default, Debug)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ConfigProject {
     #[serde(default)]
@@ -59,7 +59,7 @@ pub struct ConfigProject {
     pub description: String,
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ConfigFolders {
     /// The root folder of the project
@@ -123,7 +123,7 @@ impl Default for ConfigFolders {
     }
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ConfigTemplates {
     pub post_template: String,
@@ -161,7 +161,7 @@ impl Default for ConfigServer {
     }
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ConfigDates {
     pub date_format: String,
@@ -169,7 +169,7 @@ pub struct ConfigDates {
     pub output_date_time_format: String,
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ConfigServer {
     pub server_address: String, // usually "127.0.0.1:8001"
@@ -179,7 +179,7 @@ pub struct ConfigServer {
     pub auto_reload_websocket_path: String,
 }
 
-#[derive(Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct ConfigRSS {
     pub absolute_feed_address: String, // the absolute URL of the feed
@@ -192,7 +192,7 @@ pub struct ConfigRSS {
 
 
 
-#[derive(Deserialize, Clone, Default, Debug)]
+#[derive(Serialize, Deserialize, Clone, Default, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
     /// Various Project Properties
