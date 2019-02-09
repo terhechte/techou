@@ -68,7 +68,8 @@ pub struct TemplateContext<'a, T> {
 pub struct Page {
     pub index: usize,
     pub title: String,
-    pub items: usize
+    pub items: usize,
+    pub path: String
 }
 
 #[derive(Serialize, Debug, Default)]

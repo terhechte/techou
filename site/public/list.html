@@ -4,3 +4,13 @@
   <li><a href="{{ article.slug }}">{{ article.info.title }}</a></li>
 {%- endfor %}
 </ul>
+
+<div>
+	<h3>current:{{ pagination.current }}</h3>
+	{% if pagination.next %}
+	<h3>next:{{ pagination.next.index }}, {{ pagination.next.title }}</h3>
+	{% endif %}
+	{% if pagination.previous %}
+	<h3>previous:{{ pagination.previous.index }}, {{ pagination.previous.title }}</h3>
+	{% endif %}
+</div>

@@ -5,6 +5,7 @@ mod error;
 mod template;
 mod parse_event_handlers;
 mod feeds;
+mod builder;
 
 pub mod front_matter;
 pub mod server;

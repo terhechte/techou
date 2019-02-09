@@ -18,9 +18,7 @@ use toml::Value;
 
 impl Templates {
     pub fn new<A: AsRef<Path>>(directory: A) -> Result<Templates> {
-        println!("templates?");
         let folder_path = directory.as_ref().to_str().expect("Could not find template folder");
-        println!("dirs in {}", &folder_path);
         let mut tera = Tera::new(&format!("{}/*.html", folder_path))
             .ctx(&folder_path)?;
         // We don't want to escape content. After all, this is a static engine
