@@ -22,6 +22,13 @@ pub struct Document {
     pub sections: Vec<(i32, String)>
 }
 
+impl AsRef<Document> for Document {
+    #[inline]
+    fn as_ref(&self) -> &Document {
+        self
+    }
+}
+
 impl Document {
     pub fn new<A: AsRef<Path>>(contents: &str, path: A, config: &Config) -> Result<Document> {
         let filename = path.as_ref().file_name().and_then(|e| e.to_str())
@@ -62,9 +69,7 @@ fn slug_from_frontmatter(front_matter: &FrontMatter) -> String {
         return slug.clone();
     }
     // make lowercase ascii-only title
-    let title: String = front_matter.title.to_lowercase()
-        .replace(|c: char| !c.is_ascii_alphanumeric() && !c.is_ascii_whitespace(), "")
-        .split_whitespace().collect::<Vec<&str>>().join("-");
+    let title = utils::slugify(&front_matter.title);
     let d = &front_matter.date;
     format!("{}-{}-{}-{}.html", d.year(), d.month(), d.day(), title)
 }

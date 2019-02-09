@@ -38,24 +38,25 @@ fn catchable_execute(config: &Config) -> Result<()> {
 
     let template_writer = Templates::new(&config.folders.public_folder_path()).unwrap();
 
-
-    // write all posts + slug
+    // write all posts
     builder::posts(&posts, &config.folders.posts_folder_name, &template_writer, &config)?;
 
     // write all pages
     let pages = documents_in_folder(&config.folders.pages_folder_path(), &config)?;
     builder::pages(&pages, &config.folders.pages_folder_name, &template_writer, &config)?;
 
+    // Write the indexed pages
     let title_fn = |index| {
         match index {
             0 => ("index.html".to_string(), "Index".to_string()),
             _ => (format!("index-{}.html", index), format!("Index - Page {}", index)),
         }
     };
-
     builder::indexes_paged(&posts, 3, title_fn, "", &template_writer, &config)?;
 
-    // todo: write per tag
+    // Write the tags
+    let by_tag = posts_by_tag(&posts);
+    builder::tags(&by_tag, &config.folders.tags_folder_name, &template_writer, &config)?;
 
     // Write the feed
     feeds::write_posts_rss(&posts, &config.folders.output_folder_path().join("feed.rss"), &config)?;

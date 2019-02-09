@@ -9,6 +9,7 @@ use crate::document::{Document, documents_in_folder};
 use crate::template::Templates;
 use crate::list::*;
 use crate::feeds;
+use crate::utils;
 
 /// Write the posts to the folder `folder` with template writer `writer`
 /// `folder` has to be a name / path within the output folder, but without the
@@ -39,7 +40,8 @@ pub fn pages<A: AsRef<Path>>(pages: &Vec<Document>, folder: A, template_writer: 
     Ok(())
 }
 
-pub fn indexes<A: AsRef<Path>>(posts: &Vec<Document>, folder: A, template_writer: &Templates, config: &Config) -> Result<()> {
+/// Write all the posts into one long index file.
+pub fn index<A: AsRef<Path>>(posts: &Vec<Document>, folder: A, template_writer: &Templates, config: &Config) -> Result<()> {
     let folder = config.folders.output_folder_path().join(folder.as_ref());
     let path = folder.join("index.html");
     match template_writer.write_list(&List {
@@ -112,3 +114,23 @@ pub fn indexes_paged<A: AsRef<Path>, TitleFn>(posts: &Vec<Document>,
     Ok(())
 }
 
+/// Write out documents for each tag with the articles for that tag
+pub fn tags<'a, A: AsRef<Path>>(tag_posts: &Vec<Tag<'a>>, folder: A, template_writer: &Templates, config: &Config) -> Result<()> {
+    let folder = config.folders.output_folder_path().join(folder.as_ref());
+    for tag in tag_posts {
+        let slug = format!("{}.html", &utils::slugify(&tag.name));
+        let path = folder.join(&slug);
+        match template_writer.write_list(&List {
+            title: tag.name,
+            posts: tag.posts.as_slice(),
+            pagination: Pagination {
+                current: 0,
+                next: None,
+                previous: None
+            }}, &path, &config) {
+            Ok(_) => println!("Wrote tag index: {:?}", &path),
+            Err(e) => println!("Could not write index {:?}: {:?}", &path, &e)
+        };
+    }
+    Ok(())
+}

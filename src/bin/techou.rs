@@ -105,9 +105,7 @@ fn main() {
                             &"title" => {
                                 // FIXME: there should be a config option with format syntax that
                                 // allows the user to define how to generate post names
-                                options.filename = trimmed.to_lowercase()
-                                    .replace(|c: char| !c.is_ascii_alphanumeric() && !c.is_ascii_whitespace(), "")
-                                    .split_whitespace().collect::<Vec<&str>>().join("-");
+                                options.filename = techou::utils::slugify(&trimmed);
                                 options.filename.push_str(".md");
                                 options.title = trimmed;
                                 break;

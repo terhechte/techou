@@ -36,8 +36,10 @@ impl Templates {
         self.write_item(&config.templates.page_template, post, path, config)
     }
 
-    pub fn write_list<'a, A: AsRef<Path>>(&self, list: &'a List<'a>, path: A, config: &Config)
-        -> Result<()> {
+    pub fn write_list<'a, A: AsRef<Path>, D: AsRef<Document>>(&self, list: &'a List<'a, D>, path: A, config: &Config)
+        -> Result<()>
+    where D: Serialize
+    {
         self.write_item(&config.templates.list_template, list, path, config)
     }
 

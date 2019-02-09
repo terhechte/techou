@@ -1,6 +1,5 @@
 mod document;
 mod list;
-mod utils;
 mod error;
 mod template;
 mod parse_event_handlers;
@@ -12,4 +11,4 @@ pub mod server;
 pub mod config;
 pub mod executor;
 pub mod io_utils;
-
+pub mod utils;

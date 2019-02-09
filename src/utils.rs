@@ -6,3 +6,9 @@ pub fn hash_string(input: &str, length: usize) -> String {
     let (short_hash, _) = hash.split_at(length);
     short_hash.to_string()
 }
+
+pub fn slugify(input: &str) -> String {
+    input.to_lowercase()
+        .replace(|c: char| !c.is_ascii_alphanumeric() && !c.is_ascii_whitespace(), "")
+        .split_whitespace().collect::<Vec<&str>>().join("-")
+}
