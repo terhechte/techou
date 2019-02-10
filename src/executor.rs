@@ -45,12 +45,21 @@ fn catchable_execute(config: &Config) -> Result<()> {
 
     let template_writer = Templates::new(&config.folders.public_folder_path()).unwrap();
 
-    // write all posts
-    builder::posts(&posts, &config.folders.posts_folder_name, &template_writer, &config)?;
-
-    // write all pages
     let pages = documents_in_folder(&config.folders.pages_folder_path(), &config)?;
-    builder::pages(&pages, &config.folders.pages_folder_name, &template_writer, &config)?;
+    let by_tag = posts_by_tag(&posts);
+    // FIXME: By Year!
+    let by_year = posts_by_date(&posts);
+
+    let builder = builder::Builder::with_context(DocumentContext {
+        posts: &posts,
+        pages: &pages,
+        by_date: &by_year,
+        by_tag: &by_tag
+    }, &template_writer, &config);
+
+    builder.posts(&posts, &config.folders.posts_folder_name)?;
+    builder.pages(&pages, &config.folders.pages_folder_name)?;
+    builder.tags(&by_tag, &config.folders.tags_folder_name)?;
 
     // Write the indexed pages
     let title_fn = |index| {
@@ -59,11 +68,8 @@ fn catchable_execute(config: &Config) -> Result<()> {
             _ => (format!("index-{}.html", index), format!("Index - Page {}", index)),
         }
     };
-    builder::indexes_paged(&posts, 3, title_fn, "", &template_writer, &config)?;
+    builder.indexes_paged(&posts, 3, title_fn, "")?;
 
-    // Write the tags
-    let by_tag = posts_by_tag(&posts);
-    builder::tags(&by_tag, &config.folders.tags_folder_name, &template_writer, &config)?;
 
     // Write the feed
     feeds::write_posts_rss(&posts, &config.folders.output_folder_path().join("feed.rss"), &config)?;

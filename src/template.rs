@@ -2,19 +2,27 @@ use std::path::Path;
 
 use tera::{Tera, Context};
 use serde::Serialize;
+use serde_derive::Serialize;
 
 use crate::error::*;
 use crate::document::Document;
-use crate::list::List;
+use crate::list::*;
 use crate::io_utils::spit;
 use crate::config::Config;
 use crate::server::auto_reload_code;
+use toml::Value;
 
 pub struct Templates {
     tera: Tera
 }
+#[derive(Serialize, Debug)]
+struct TemplateContext<'a, T>
+    where T: Serialize {
+    config: &'a Config,
+    context: &'a DocumentContext<'a>,
+    content: &'a T,
+}
 
-use toml::Value;
 
 impl Templates {
     pub fn new<A: AsRef<Path>>(directory: A) -> Result<Templates> {
@@ -28,19 +36,33 @@ impl Templates {
         })
     }
 
-    pub fn write_post<A: AsRef<Path>>(&self, post: &Document, path: A, config: &Config) -> Result<()> {
-        self.write_item(&config.templates.post_template, post, path, config)
+    pub fn write_post<'a, A: AsRef<Path>>(&self, context: &DocumentContext<'a>, post: &Document, path: A, config: &Config) -> Result<()> {
+        let item = TemplateContext {
+            config,
+            context,
+            content: post
+        };
+        self.write_item(&config.templates.post_template, &item, path, config)
     }
 
-    pub fn write_page<A: AsRef<Path>>(&self, post: &Document, path: A, config: &Config) -> Result<()> {
-        self.write_item(&config.templates.page_template, post, path, config)
+    pub fn write_page<'a, A: AsRef<Path>>(&self, context: &DocumentContext<'a>, page: &Document, path: A, config: &Config) -> Result<()> {
+        let item = TemplateContext {
+            config,
+            context,
+            content: page
+        };
+        self.write_item(&config.templates.page_template, &item, &path, config)
     }
 
-    pub fn write_list<'a, A: AsRef<Path>, D: AsRef<Document>>(&self, list: &'a List<'a, D>, path: A, config: &Config)
+    pub fn write_list<'a, A: AsRef<Path>, D: AsRef<Document>>(&self, context: &DocumentContext<'a>, list: &'a List<'a, D>, path: A, config: &Config)
         -> Result<()>
-    where D: Serialize
-    {
-        self.write_item(&config.templates.list_template, list, path, config)
+    where D: Serialize {
+        let item = TemplateContext {
+            config,
+            context,
+            content: list
+        };
+        self.write_item(&config.templates.list_template, &item, path, config)
     }
 
     fn write_item<'a, A: AsRef<Path>, I: Serialize>(&self, template_name: &str, item: &'a I, path: A, config: &Config)

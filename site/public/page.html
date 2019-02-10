@@ -1,14 +1,14 @@
 yeah
-{{ filename }}
+{{ content.filename }}
 <hr/>
-{{ content }}
+{{ content.content }}
 <br/>
-{{ info.title }}
+{{ content.info.title }}
 <ul>
 </ul>
 
 <div id="sections">
-	{% for section in sections %}
+	{% for section in content.sections %}
 	<h3><a href="#header-section-{{ section[0] }}">{{ section[1] }}</a></h3>
 	{% endfor %}
 </div>

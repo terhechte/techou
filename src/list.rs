@@ -47,15 +47,8 @@ impl<'a> From<(u32, Vec<&'a Document>)> for Month<'a> {
 pub struct DocumentContext<'a> {
     pub pages: &'a Vec<Document>,
     pub posts: &'a Vec<Document>,
-    pub posts_by_date: Vec<Year<'a>>,
-    pub posts_by_tag: Vec<Tag<'a>>
-}
-
-#[derive(Serialize, Debug)]
-pub struct TemplateContext<'a, T> {
-    config: &'a Config,
-    posts: DocumentContext<'a>,
-    content: &'a T,
+    pub by_date: &'a Vec<Year<'a>>,
+    pub by_tag: &'a Vec<Tag<'a>>
 }
 
 #[derive(Serialize, Debug, Clone)]
