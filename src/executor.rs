@@ -9,6 +9,7 @@ use crate::config::Config;
 use crate::document::{Document, documents_in_folder};
 use crate::template::Templates;
 use crate::list::*;
+use crate::document_operations::*;
 use crate::feeds;
 
 pub fn execute(ignore_errors: bool, config: &Config) -> Result<()> {
@@ -35,6 +36,12 @@ fn catchable_execute(config: &Config) -> Result<()> {
     println!("Root folder: {:?}", &config.folders.root);
     let mut posts = documents_in_folder(&config.folders.posts_folder_path(), &config)?;
     posts.sort_by(|a1, a2| a2.info.created_timestamp.partial_cmp(&a1.info.created_timestamp).unwrap());
+
+    // if we have more than 5 posts, start generating similarity
+    if posts.len() >= 5 {
+        // We want two similarity items for each post
+        make_similarity(&mut posts, 2);
+    }
 
     let template_writer = Templates::new(&config.folders.public_folder_path()).unwrap();
 

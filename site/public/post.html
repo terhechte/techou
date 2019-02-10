@@ -12,3 +12,9 @@ yeah
 	<h3><a href="#header-section-{{ section[0] }}">{{ section[1] }}</a></h3>
 	{% endfor %}
 </div>
+
+<div id="similar">
+	{% for sim in similar_documents %}
+	  <h4>Simi: {{ sim.title }}: {{ sim.slug }} ## {{ sim.score }}</h4>
+	{% endfor %}
+</div>

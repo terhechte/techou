@@ -13,13 +13,23 @@ use pulldown_cmark::{Event, Parser, Tag, html};
 use serde_derive::{Serialize};
 
 #[derive(Serialize, Debug)]
+pub struct SimilarDocument {
+    pub identifier: String,
+    pub title: String,
+    pub desc: String,
+    pub slug: String,
+    pub score: u32
+}
+
+#[derive(Serialize, Debug)]
 pub struct Document {
     pub identifier: String,
     pub filename: String,
     pub info: FrontMatter,
     pub slug: String,
     pub content: String,
-    pub sections: Vec<(i32, String)>
+    pub sections: Vec<(i32, String)>,
+    pub similar_documents: Vec<SimilarDocument>
 }
 
 impl AsRef<Document> for Document {
@@ -38,7 +48,7 @@ impl Document {
         let (info, article) = parse_front_matter(&contents, &path.as_ref(), &config)?;
         let slug = slug_from_frontmatter(&info);
         let ParseResult { content, sections } = markdown_to_html(article);
-        Ok(Document { identifier, filename, info, slug, content, sections } )
+        Ok(Document { identifier, filename, info, slug, content, sections, similar_documents: Vec::new() } )
     }
 }
 

@@ -17,29 +17,17 @@ Designed to be easy to hack on
 - [x] commandline tool to create new posts
 - [x] have 'release' flag to build with 'published' only, no websockets, and maybe even parcel or webpack?
 - [ ] consider 'https://github.com/nathan/pax' to compress JS in release and the css-.. crate for compressing CSS
-- [ ] when there is a project.toml, it should be used in stead of just using "."
-- [ ] tags
+- [x] when there is a project.toml, it should be used in stead of just using "."
+- [x] tags
 - [ ] archives
-- [ ] support the better category / sitecategory system from rusttest1 instead of my year/month. that way I can also do tags etc
-- [ ] pagination
-- [ ] add config to all templates, also allow meta information in config just like with articles.
+- [ ] figure out error reporting now that some funcs went away from the executor, but we still want to continue building even if one page fails...
+- [x] pagination
+- [x] add config to all templates, also allow meta information in config just like with articles.
 - [ ] next / previous article
 - [ ] have a function to get a link to a different article (maybe by article id?, might need an article id)
-- [ ] article recommendations
+- [x] article recommendations
 - [ ] cleanup bin/techou.rs
 - [ ] cleanup server
+# Long Term Future
 - [ ] use salsa to only re-render what has changed
 - [ ] some restructuring to make it easier usable as a library
-in this r code:
-``` R
-x <- 5
-y <- 6
-x + y
-```
-the last y is missing. this seems to be a syntect issue. as the following also happens
-``` R
-x + y
-y + z
-x + a
-```
-y, z, a on the right side never appear either
