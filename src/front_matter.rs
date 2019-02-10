@@ -10,6 +10,16 @@ use crate::error::{Result, TechouError};
 
 use pulldown_cmark::{Parser, html};
 
+static DEFAULT_FRONT_MATTER_SEP: &str = "\n---\n";
+
+static DEFAULT_FRONT_MATTER: &str = r#"[frontMatter]
+title = "{}"
+tags = []
+created = "{}"
+description = ""
+published = false
+"#;
+
 fn default_nativetime() -> NaiveDateTime {
     NaiveDate::from_ymd(2016, 7, 8).and_hms(9, 10, 11)
 }
@@ -106,14 +116,29 @@ pub fn parse_front_matter<'a, A: AsRef<Path>>(input: &'a str, filename: A, confi
     Ok((front_matter, article))
 }
 
+pub fn default_front_matter(title: &str, date: &str) -> String {
+    format!(r#"[frontMatter]
+title = "{}"
+tags = []
+created = "{}"
+description = ""
+published = false
+---
+
+# Hello World"#, &title, &date)
+}
+
+pub fn join_front_matter_with_content(front_matter: &str, content: &str) -> String {
+    format!("{}{}{}", &front_matter, DEFAULT_FRONT_MATTER_SEP, &content)
+}
+
 fn detect_front_matter<'a, A: AsRef<Path>>(input: &'a str, filename: A, config: &Config) -> Result<(&'a str, &'a str)> {
-    let separator = "\n---\n";
-    let index = match input.find(separator) {
+    let index = match input.find(DEFAULT_FRONT_MATTER_SEP) {
         Some(r) => r,
         None => return Err(TechouError::FrontMatter{issue: format!("{:?}: Missing Front Matter", &filename.as_ref())})
     };
     let (f, a) = input.split_at(index);
-    Ok((f, &a[separator.len()..]))
+    Ok((f, &a[DEFAULT_FRONT_MATTER_SEP.len()..]))
 }
 
 pub fn detect_date_time(input: &str, config: &Config) -> Result<(String, i64, NaiveDateTime)> {
@@ -180,6 +205,15 @@ published = true
 ---
 this."#;
         let (fm, _) = front_matter::parse_front_matter(&contents, "yeah.md", &Default::default()).unwrap();
+        assert!(fm.rfc2822().len() > 0);
+    }
+
+    #[test]
+    fn test_default_front_matter() {
+        use crate::front_matter;
+        let content = front_matter::default_front_matter("we're default", "2009-12-30");
+        let (fm, _) = front_matter::parse_front_matter(&content, "yeah.md", &Default::default()).unwrap();
+        assert_eq!(fm.title, "we're default");
         assert!(fm.rfc2822().len() > 0);
     }
 }

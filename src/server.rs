@@ -52,11 +52,23 @@ impl ReloadWebSocketActor {
     }
 
     fn hb(&self, ctx: &mut <Self as Actor>::Context) {
+        {
+            if &ctx.state().state.is_none() == &true {
+                return;
+            }
+        }
+
+        // if the receiver is nil, don't do anything
         // check every 100ms
         ctx.run_interval(Duration::from_millis(100), |act, ctx| {
+            // we will only get here if we do have a state
             let wrapped_receiver = &ctx.state().state.clone();
-            let r = wrapped_receiver.lock().unwrap();
-            let mut iter = r.try_iter();
+            let r = match wrapped_receiver {
+                Some(x) => x,
+                None => return
+            };
+            let x = r.lock().unwrap();
+            let mut iter = x.try_iter();
             // Consume the iterator while also getting the last value. if we have
             // one value, it is true, if we have more values, the last is also true
             // This way, we only reload once even if multiple `reload`s did make it into the iterator
@@ -95,10 +107,10 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for ReloadWebSocketActor {
 }
 
 struct AppState {
-    state: Arc<Mutex<Receiver<bool>>>
+    state: Option<Arc<Mutex<Receiver<bool>>>>
 }
 
-pub fn run_file_server(reload_receiver: Receiver<bool>, config: &Config) {
+pub fn run_file_server(reload_receiver: Option<Receiver<bool>>, config: &Config) {
     let sys = actix::System::new("techou");
 
     let folder = config.folders.output_folder_path().to_str()
@@ -106,7 +118,10 @@ pub fn run_file_server(reload_receiver: Receiver<bool>, config: &Config) {
     let ws_path = config.server.auto_reload_websocket_path.clone();
 
     println!("Serving '{:?}' on {}", &folder, &config.server.server_address);
-    let receiver = Arc::new(Mutex::new(reload_receiver));
+    let receiver: Option<Arc<Mutex<Receiver<bool>>>> = match reload_receiver {
+        Some(o) => Some(Arc::new(Mutex::new(o))),
+        None => None
+    };
 
     server::new(move || {
         App::with_state(AppState { state: receiver.clone() })

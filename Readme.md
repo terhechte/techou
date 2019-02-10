@@ -10,6 +10,8 @@ Extended over a week
 Designed to be easy to hack on
 
 [Open Tasks]
+- [ ] Run Clippy
+- [ ] Run Rustfmt
 - [x] Use `err-derive` crate: https://crates.io/crates/err-derive
 - [x] Use `err-ctx` crate: https://crates.io/crates/err-ctx
 - [ ] if therr're rendering errors, end them via websocket to the browser, so that they can be displayed in a small dark bottom-bar in the rendered site...
