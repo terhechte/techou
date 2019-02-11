@@ -1,10 +1,10 @@
 use copy_dir::*;
 
-use std::path::{Path, PathBuf};
-use std::fs::{read_dir, create_dir_all};
 use std::ffi::OsStr;
-use std::io::prelude::*;
 use std::fs::File;
+use std::fs::{create_dir_all, read_dir};
+use std::io::prelude::*;
+use std::path::{Path, PathBuf};
 
 use crate::error::*;
 
@@ -25,25 +25,32 @@ pub fn spit<A: AsRef<Path>>(path: A, contents: &str) -> Result<()> {
     if let Some(parent) = path.parent() {
         create_dir_all(&parent).ctx(parent)?;
     }
-    let mut file = OpenOptions::new().write(true)
+    let mut file = OpenOptions::new()
+        .write(true)
         .create_new(true)
-        .open(&path).ctx(&path)?;
+        .open(&path)
+        .ctx(&path)?;
     Ok(file.write_all(contents.as_bytes()).ctx(path)?)
 }
 
-pub fn contents_of_directory<A: AsRef<Path>>(directory: A, file_type: &str) -> Result<Vec<PathBuf>> {
+pub fn contents_of_directory<A: AsRef<Path>>(
+    directory: A,
+    file_type: &str,
+) -> Result<Vec<PathBuf>> {
     let valid_type = OsStr::new(file_type);
     let mut matches: Vec<PathBuf> = Vec::new();
     let directory_path = directory.as_ref();
     for entry in read_dir(directory_path).ctx(directory_path)? {
         let entry = entry.ctx(directory_path)?;
         let path = entry.path();
-        if path.is_dir() { continue }
+        if path.is_dir() {
+            continue;
+        }
         match path.extension() {
             Some(x) if x == valid_type => matches.push(path),
             _ => {
                 println!("Invalid file: {:?}", &path);
-                continue
+                continue;
             }
         };
     }
@@ -64,12 +71,16 @@ pub fn clear_directory<A: AsRef<Path>>(directory: A) -> Result<()> {
     Ok(())
 }
 
-pub fn copy_items_to_directory<A: AsRef<Path>>(items: &Vec<String>, from_dir: A, to_dir: A) -> Result<()> {
+pub fn copy_items_to_directory<A: AsRef<Path>>(
+    items: &Vec<String>,
+    from_dir: A,
+    to_dir: A,
+) -> Result<()> {
     for entry in items {
         let source = from_dir.as_ref().join(entry);
         if !source.exists() {
             println!("Could not find path {:?}", &entry);
-            continue
+            continue;
         };
         let target = to_dir.as_ref().join(entry);
         println!("copy '{:?}' to '{:?}'", &source, &target);
@@ -77,7 +88,7 @@ pub fn copy_items_to_directory<A: AsRef<Path>>(items: &Vec<String>, from_dir: A,
         match copy_dir(&source, &target) {
             Ok(ref e) if e.len() > 0 => e.iter().for_each(|m| println!("Could not copy {:?}", &e)),
             Err(e) => println!("Copy Error: {:?}", &e),
-            _ => ()
+            _ => (),
         };
     }
     Ok(())

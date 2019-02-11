@@ -1,10 +1,10 @@
+use serde_derive::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::env;
 use std::path::PathBuf;
-use std::collections::HashMap;
-use serde_derive::{Serialize, Deserialize};
 
-use crate::io_utils::slurp;
 use crate::error::*;
+use crate::io_utils::slurp;
 
 static DEFAULT_PROJECT_TOML: &str = r#"
 [Project]
@@ -83,7 +83,9 @@ impl ConfigFolders {
     pub fn posts_folder_path(&self) -> PathBuf {
         self.root.join(&self.posts_folder)
     }
-    pub fn pages_folder_path(&self) -> PathBuf { self.root.join(&self.pages_folder) }
+    pub fn pages_folder_path(&self) -> PathBuf {
+        self.root.join(&self.pages_folder)
+    }
     pub fn output_folder_path(&self) -> PathBuf {
         self.root.join(&self.output_folder)
     }
@@ -107,7 +109,8 @@ impl ConfigFolders {
 
 impl Default for ConfigFolders {
     fn default() -> Self {
-        let root = env::current_dir().expect("something is rotten in the state of your disk. No Current Dir found.");
+        let root = env::current_dir()
+            .expect("something is rotten in the state of your disk. No Current Dir found.");
         ConfigFolders {
             root,
             posts_folder: "posts".to_string(),
@@ -190,8 +193,6 @@ pub struct ConfigRSS {
     pub author_name: String,
 }
 
-
-
 #[derive(Serialize, Deserialize, Clone, Default, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
@@ -221,11 +222,10 @@ pub struct Config {
 
     /// Meta
     #[serde(default, rename = "Meta")]
-    pub meta: HashMap<String, String>
+    pub meta: HashMap<String, String>,
 }
 
 impl Config {
-
     pub fn new<A: AsRef<std::path::Path>>(folder: A) -> Config {
         let mut config: Config = Default::default();
         config.folders.root = folder.as_ref().to_path_buf();
@@ -233,8 +233,8 @@ impl Config {
     }
 
     pub fn toml(input: &str, in_folder: &PathBuf) -> Result<Config> {
-        let mut config: Config = toml::from_str(&input)
-            .ctx(format!("toml file in folder {:?}", &in_folder))?;
+        let mut config: Config =
+            toml::from_str(&input).ctx(format!("toml file in folder {:?}", &in_folder))?;
 
         config.folders.root = in_folder.clone();
         Ok(config)
@@ -243,7 +243,10 @@ impl Config {
     pub fn file<A: AsRef<std::path::Path>>(toml_file: A) -> Result<Config> {
         let parent = match &toml_file.as_ref().parent() {
             Some(root) => root.to_path_buf(),
-            None => panic!("The toml file {:?} is invalid. No Parent Folder.", &toml_file.as_ref())
+            None => panic!(
+                "The toml file {:?} is invalid. No Parent Folder.",
+                &toml_file.as_ref()
+            ),
         };
         let contents = slurp(toml_file)?;
         Config::toml(&contents, &parent)
@@ -287,7 +290,11 @@ title = "klaus"
     #[test]
     fn test_default_project_toml() {
         use crate::config::*;
-        let parsed = Config::toml(&DEFAULT_PROJECT_TOML, &std::path::PathBuf::from("/tmp/test.toml")).unwrap();
+        let parsed = Config::toml(
+            &DEFAULT_PROJECT_TOML,
+            &std::path::PathBuf::from("/tmp/test.toml"),
+        )
+        .unwrap();
         assert_eq!(parsed.project.keywords, vec!["nam", "nom", "grah"]);
     }
 }

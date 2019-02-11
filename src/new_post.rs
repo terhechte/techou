@@ -1,17 +1,21 @@
-use std::sync::mpsc::channel;
-use chrono::{naive::NaiveDate, Local, DateTime};
-use crate::utils;
+use crate::config::Config;
 use crate::front_matter;
 use crate::io_utils;
-use crate::config::Config;
+use crate::utils;
+use chrono::{naive::NaiveDate, DateTime, Local};
+use std::sync::mpsc::channel;
 
 pub fn interactive(config: &Config) {
     let local: DateTime<Local> = Local::now();
     let formatted = local.format(&config.dates.date_time_format).to_string();
     let flags = &[
         ("title", "The title of this post", None),
-        ("date", "The date/time for this post", Some(formatted.as_str())),
-        ("filename", "The filename for this post", Some("filename"))
+        (
+            "date",
+            "The date/time for this post",
+            Some(formatted.as_str()),
+        ),
+        ("filename", "The filename for this post", Some("filename")),
     ];
     use std::io;
     #[derive(Default)]
@@ -19,14 +23,14 @@ pub fn interactive(config: &Config) {
         filename: String,
         title: String,
         date: String,
-        tags: Vec<String>
+        tags: Vec<String>,
     }
     let mut options: Options = Default::default();
     for (key, title, default_value) in flags {
         println!("# {}", &title);
         let default = default_value.map(|d| match d {
             "filename" => options.filename.clone(),
-            _ => d.to_string()
+            _ => d.to_string(),
         });
         if let Some(ref default) = default {
             println!("  (Default is `{}`)", &default);
@@ -37,13 +41,13 @@ pub fn interactive(config: &Config) {
             let mut trimmed = input.trim().to_string();
             match (&default, trimmed.len()) {
                 (Some(ref d), n) if n == 0 => trimmed = d.clone(),
-                _ => ()
+                _ => (),
             }
             match res {
                 Ok(_) if trimmed.len() == 0 => {
                     println!("You have to enter a value");
                     continue;
-                },
+                }
                 Ok(_) => {
                     match key {
                         &"title" => {
@@ -53,25 +57,28 @@ pub fn interactive(config: &Config) {
                             options.filename.push_str(".md");
                             options.title = trimmed;
                             break;
-                        },
+                        }
                         &"date" => {
                             match front_matter::detect_date_time(&trimmed, &config) {
                                 Ok(d) => {
                                     options.date = d.0;
                                     break;
-                                },
-                                Err(e) => println!("Invalid Date / Time Format. [Hint: {}]\n{}", &config.dates.date_format, e),
+                                }
+                                Err(e) => println!(
+                                    "Invalid Date / Time Format. [Hint: {}]\n{}",
+                                    &config.dates.date_format, e
+                                ),
                             }
                             continue;
-                        },
+                        }
                         &"filename" => {
                             options.filename = trimmed;
                             break;
-                        },
-                        _ => panic!("Invalid key {}", &key)
+                        }
+                        _ => panic!("Invalid key {}", &key),
                     }
-                },
-                Err(error) =>  {
+                }
+                Err(error) => {
                     println!("error: {}", error);
                     continue;
                 }
@@ -81,7 +88,10 @@ pub fn interactive(config: &Config) {
     // Finally we can write it
     let post_path = config.folders.posts_folder_path().join(&options.filename);
     if post_path.exists() {
-        println!("Cowardly refusing to override existing post {:?}", &post_path);
+        println!(
+            "Cowardly refusing to override existing post {:?}",
+            &post_path
+        );
         ::std::process::exit(0);
     }
     let front_matter = front_matter::default_front_matter(&options.title, &options.date);

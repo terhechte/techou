@@ -2,14 +2,20 @@ use std::path;
 use std::sync::mpsc;
 use std::time::Duration;
 
-use notify::Watcher;
 use notify::DebouncedEvent::*;
 use notify::RecursiveMode::*;
+use notify::Watcher;
 
 use crate::config::Config;
 
-pub fn reload<ActionFn>(paths: Vec<path::PathBuf>, config: &Config, action: ActionFn) -> mpsc::Receiver<bool>
-    where ActionFn: Fn(&path::Path, &Config) + std::marker::Send + 'static {
+pub fn reload<ActionFn>(
+    paths: Vec<path::PathBuf>,
+    config: &Config,
+    action: ActionFn,
+) -> mpsc::Receiver<bool>
+where
+    ActionFn: Fn(&path::Path, &Config) + std::marker::Send + 'static,
+{
     let (reload_sender, reload_receiver) = mpsc::channel();
     //let inner_paths = paths.clone();
     let inner_config = config.clone();
@@ -24,8 +30,8 @@ pub fn reload<ActionFn>(paths: Vec<path::PathBuf>, config: &Config, action: Acti
 }
 
 fn trigger_on_change<F>(folders: Vec<path::PathBuf>, closure: F)
-    where
-        F: Fn(&path::Path),
+where
+    F: Fn(&path::Path),
 {
     // Create a channel to receive the events.
     let (tx, rx) = mpsc::channel();

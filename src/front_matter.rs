@@ -1,14 +1,14 @@
+use chrono::{Datelike, NaiveDate, NaiveDateTime, Timelike};
+use serde;
+use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
 use toml::de::from_str;
-use chrono::{NaiveDate, NaiveDateTime, Datelike, Timelike};
-use serde;
-use serde_derive::{Serialize, Deserialize};
 
 use crate::config::Config;
 use crate::error::{Result, TechouError};
 
-use pulldown_cmark::{Parser, html};
+use pulldown_cmark::{html, Parser};
 
 static DEFAULT_FRONT_MATTER_SEP: &str = "\n---\n";
 
@@ -31,7 +31,7 @@ pub struct DateInfo {
     pub day: u32,
     pub hour: u32,
     pub minute: u32,
-    pub second: u32
+    pub second: u32,
 }
 
 impl From<NaiveDateTime> for DateInfo {
@@ -42,7 +42,7 @@ impl From<NaiveDateTime> for DateInfo {
             day: date_time.day(),
             hour: date_time.hour(),
             minute: date_time.minute(),
-            second: date_time.second()
+            second: date_time.second(),
         }
     }
 }
@@ -63,19 +63,19 @@ pub struct FrontMatter {
     // The unix timestamp will be injected
     #[serde(default)]
     pub created_timestamp: i64,
-    #[serde(default="default_nativetime", skip)]
+    #[serde(default = "default_nativetime", skip)]
     pub date: NaiveDateTime,
     #[serde(default)]
     pub date_info: DateInfo, // FIXME: Move all date/time info into this struct.
     // The unique identifier will be injected (based on the title)
     #[serde(default)]
-    pub identifier: String
+    pub identifier: String,
 }
 
 impl FrontMatter {
     pub fn rfc2822(&self) -> String {
         use chrono::format::Item;
-        use chrono::{DateTime, TimeZone, NaiveDateTime, Utc};
+        use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
         let dt = DateTime::<Utc>::from_utc(self.date.clone(), Utc);
         return dt.to_rfc2822();
     }
@@ -86,17 +86,28 @@ impl FrontMatter {
 struct ParsedFrontMatter {
     front_matter: FrontMatter,
     #[serde(default)]
-    meta: HashMap<String, String>
+    meta: HashMap<String, String>,
 }
 
-pub fn parse_front_matter<'a, A: AsRef<Path>>(input: &'a str, filename: A, config: &Config) -> Result<(FrontMatter, &'a str)> {
+pub fn parse_front_matter<'a, A: AsRef<Path>>(
+    input: &'a str,
+    filename: A,
+    config: &Config,
+) -> Result<(FrontMatter, &'a str)> {
     let (front_matter_raw, article) = detect_front_matter(&input, &filename, &config)?;
     let parsed_front_matter: ParsedFrontMatter = match from_str(front_matter_raw) {
         Ok(s) => s,
-        Err(e) => return Err(TechouError::FrontMatter{issue: format!("{:?}: Invalid Front Matter: {}", &filename.as_ref(), &e)})
+        Err(e) => {
+            return Err(TechouError::FrontMatter {
+                issue: format!("{:?}: Invalid Front Matter: {}", &filename.as_ref(), &e),
+            });
+        }
     };
 
-    let ParsedFrontMatter { mut front_matter, meta } = parsed_front_matter;
+    let ParsedFrontMatter {
+        mut front_matter,
+        meta,
+    } = parsed_front_matter;
 
     let (date_string, timestamp, date) = detect_date_time(&front_matter.created, &config)?;
 
@@ -117,7 +128,8 @@ pub fn parse_front_matter<'a, A: AsRef<Path>>(input: &'a str, filename: A, confi
 }
 
 pub fn default_front_matter(title: &str, date: &str) -> String {
-    format!(r#"[frontMatter]
+    format!(
+        r#"[frontMatter]
 title = "{}"
 tags = []
 created = "{}"
@@ -125,29 +137,48 @@ description = ""
 published = false
 ---
 
-# Hello World"#, &title, &date)
+# Hello World"#,
+        &title, &date
+    )
 }
 
 pub fn join_front_matter_with_content(front_matter: &str, content: &str) -> String {
     format!("{}{}{}", &front_matter, DEFAULT_FRONT_MATTER_SEP, &content)
 }
 
-fn detect_front_matter<'a, A: AsRef<Path>>(input: &'a str, filename: A, config: &Config) -> Result<(&'a str, &'a str)> {
+fn detect_front_matter<'a, A: AsRef<Path>>(
+    input: &'a str,
+    filename: A,
+    config: &Config,
+) -> Result<(&'a str, &'a str)> {
     let index = match input.find(DEFAULT_FRONT_MATTER_SEP) {
         Some(r) => r,
-        None => return Err(TechouError::FrontMatter{issue: format!("{:?}: Missing Front Matter", &filename.as_ref())})
+        None => {
+            return Err(TechouError::FrontMatter {
+                issue: format!("{:?}: Missing Front Matter", &filename.as_ref()),
+            });
+        }
     };
     let (f, a) = input.split_at(index);
     Ok((f, &a[DEFAULT_FRONT_MATTER_SEP.len()..]))
 }
 
 pub fn detect_date_time(input: &str, config: &Config) -> Result<(String, i64, NaiveDateTime)> {
-    let parsed_date = NaiveDateTime::parse_from_str(&input, &config.dates.date_time_format).or_else(|_| {
-        NaiveDate::parse_from_str(&input, &config.dates.date_format).and_then(|e| {
-            Ok(e.and_hms(10, 30, 30))
+    let parsed_date = NaiveDateTime::parse_from_str(&input, &config.dates.date_time_format)
+        .or_else(|_| {
+            NaiveDate::parse_from_str(&input, &config.dates.date_format)
+                .and_then(|e| Ok(e.and_hms(10, 30, 30)))
         })
-    }).map_err(|e| TechouError::FrontMatter{issue: format!("{:?}: Invalid Date Format in Front Matter: {}", &input, &e)})?;
-    Ok((parsed_date.format(&config.dates.output_date_time_format).to_string(), parsed_date.timestamp(), parsed_date))
+        .map_err(|e| TechouError::FrontMatter {
+            issue: format!("{:?}: Invalid Date Format in Front Matter: {}", &input, &e),
+        })?;
+    Ok((
+        parsed_date
+            .format(&config.dates.output_date_time_format)
+            .to_string(),
+        parsed_date.timestamp(),
+        parsed_date,
+    ))
 }
 
 #[cfg(test)]
@@ -161,7 +192,8 @@ name = "techou"
 version = "0.1.0 || "
 ---
 this is the actual article contents yeah."#;
-        let result = front_matter::detect_front_matter(contents, "testfile.md", &Default::default());
+        let result =
+            front_matter::detect_front_matter(contents, "testfile.md", &Default::default());
         assert!(result.is_ok());
         let (front_matter, article) = result.unwrap();
         assert!(front_matter.len() > 0);
@@ -189,7 +221,10 @@ this is the actual article contents yeah."#;
         assert!(result.is_ok());
         let (fm, _) = result.unwrap();
         assert_eq!(fm.title, "Hello World");
-        assert_eq!(fm.meta.get("author"), Some(&"Benedikt Terhechte".to_string()));
+        assert_eq!(
+            fm.meta.get("author"),
+            Some(&"Benedikt Terhechte".to_string())
+        );
     }
 
     #[test]
@@ -204,7 +239,8 @@ description = "A run around the world"
 published = true
 ---
 this."#;
-        let (fm, _) = front_matter::parse_front_matter(&contents, "yeah.md", &Default::default()).unwrap();
+        let (fm, _) =
+            front_matter::parse_front_matter(&contents, "yeah.md", &Default::default()).unwrap();
         assert!(fm.rfc2822().len() > 0);
     }
 
@@ -212,7 +248,8 @@ this."#;
     fn test_default_front_matter() {
         use crate::front_matter;
         let content = front_matter::default_front_matter("we're default", "2009-12-30");
-        let (fm, _) = front_matter::parse_front_matter(&content, "yeah.md", &Default::default()).unwrap();
+        let (fm, _) =
+            front_matter::parse_front_matter(&content, "yeah.md", &Default::default()).unwrap();
         assert_eq!(fm.title, "we're default");
         assert!(fm.rfc2822().len() > 0);
     }

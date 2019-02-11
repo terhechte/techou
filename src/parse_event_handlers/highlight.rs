@@ -2,16 +2,16 @@ use super::*;
 use std::borrow::Cow;
 
 use syntect::easy::HighlightLines;
-use syntect::highlighting::{ThemeSet, Style};
-use syntect::parsing::{SyntaxSet,ParseState};
-use syntect::html::{ClassStyle,tokens_to_classed_html};
+use syntect::highlighting::{Style, ThemeSet};
+use syntect::html::{tokens_to_classed_html, ClassStyle};
+use syntect::parsing::{ParseState, SyntaxSet};
 
 pub struct HighlightEventHandler {
     next_text_is_code: bool,
     language: String,
     current_code: String,
     syntax_set: SyntaxSet,
-    theme_set: ThemeSet
+    theme_set: ThemeSet,
 }
 
 impl HighlightEventHandler {
@@ -23,13 +23,12 @@ impl HighlightEventHandler {
             language: "text".to_owned(),
             current_code: String::new(),
             syntax_set: ps,
-            theme_set: ts
+            theme_set: ts,
         }
     }
 }
 
 impl EventHandler for HighlightEventHandler {
-
     fn handle(&mut self, event: &Event, result: &mut ParseResult, events: &mut Vec<Event>) -> bool {
         match &event {
             &Event::Start(Tag::CodeBlock(ref lang)) => {
@@ -47,8 +46,8 @@ impl EventHandler for HighlightEventHandler {
                     Some(s) => s,
                     None => match self.syntax_set.find_syntax_by_extension(&self.language) {
                         Some(s) => s,
-                        None => self.syntax_set.find_syntax_plain_text()
-                    }
+                        None => self.syntax_set.find_syntax_plain_text(),
+                    },
                 };
                 let mut ps = ParseState::new(&syntax);
                 let mut html_str = String::new();
@@ -57,17 +56,27 @@ impl EventHandler for HighlightEventHandler {
                     // If there was nothing to parse, we just add the line as is
                     match parsed_line.len() {
                         0 => html_str.push_str(&line),
-                        _ => html_str.push_str(&tokens_to_classed_html(line, parsed_line.as_slice(), ClassStyle::Spaced).as_str())
+                        _ => html_str.push_str(
+                            &tokens_to_classed_html(
+                                line,
+                                parsed_line.as_slice(),
+                                ClassStyle::Spaced,
+                            )
+                            .as_str(),
+                        ),
                     }
                     html_str.push('\n');
                 }
 
-                events.push(Event::Html(Cow::Owned(format!("<pre class=\"{}\"><code>{}</code></pre>", &syntax.name, &html_str))));
+                events.push(Event::Html(Cow::Owned(format!(
+                    "<pre class=\"{}\"><code>{}</code></pre>",
+                    &syntax.name, &html_str
+                ))));
                 self.current_code = String::new();
                 self.language = "text".to_owned();
                 self.next_text_is_code = false;
             }
-            _ => ()
+            _ => (),
         }
         true
     }

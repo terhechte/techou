@@ -1,16 +1,18 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use crate::front_matter::{parse_front_matter, FrontMatter};
-use crate::error::{Result, TechouError, ResultContext};
 use crate::config::Config;
+use crate::error::{Result, ResultContext, TechouError};
+use crate::front_matter::{parse_front_matter, FrontMatter};
+use crate::parse_event_handlers::{
+    highlight::HighlightEventHandler, section::SectionEventHandler, EventHandler, ParseResult,
+};
 use crate::utils;
-use crate::parse_event_handlers::{section::SectionEventHandler, highlight::HighlightEventHandler, EventHandler, ParseResult};
 
-use rayon::prelude::*;
 use chrono::Datelike;
-use pulldown_cmark::{Event, Parser, Tag, html};
-use serde_derive::{Serialize};
+use pulldown_cmark::{html, Event, Parser, Tag};
+use rayon::prelude::*;
+use serde_derive::Serialize;
 
 #[derive(Serialize, Debug)]
 pub struct SimilarDocument {
@@ -18,7 +20,7 @@ pub struct SimilarDocument {
     pub title: String,
     pub desc: String,
     pub slug: String,
-    pub score: u32
+    pub score: u32,
 }
 
 #[derive(Serialize, Debug)]
@@ -29,7 +31,7 @@ pub struct Document {
     pub slug: String,
     pub content: String,
     pub sections: Vec<(i32, String)>,
-    pub similar_documents: Vec<SimilarDocument>
+    pub similar_documents: Vec<SimilarDocument>,
 }
 
 impl AsRef<Document> for Document {
@@ -41,35 +43,53 @@ impl AsRef<Document> for Document {
 
 impl Document {
     pub fn new<A: AsRef<Path>>(contents: &str, path: A, config: &Config) -> Result<Document> {
-        let filename = path.as_ref().file_name().and_then(|e| e.to_str())
-            .ok_or(TechouError::Other{issue: format!("Path {:?} has no filename. Can't read it.", path.as_ref())})?
+        let filename = path
+            .as_ref()
+            .file_name()
+            .and_then(|e| e.to_str())
+            .ok_or(TechouError::Other {
+                issue: format!("Path {:?} has no filename. Can't read it.", path.as_ref()),
+            })?
             .to_string();
         let identifier = utils::hash_string(&filename, 8);
         let (info, article) = parse_front_matter(&contents, &path.as_ref(), &config)?;
         let slug = slug_from_frontmatter(&info);
         let ParseResult { content, sections } = markdown_to_html(article);
-        Ok(Document { identifier, filename, info, slug, content, sections, similar_documents: Vec::new() } )
+        Ok(Document {
+            identifier,
+            filename,
+            info,
+            slug,
+            content,
+            sections,
+            similar_documents: Vec::new(),
+        })
     }
 }
 
 pub fn documents_in_folder<A: AsRef<Path>>(folder: A, config: &Config) -> Result<Vec<Document>> {
-    use crate::io_utils::{slurp, contents_of_directory};
+    use crate::io_utils::{contents_of_directory, slurp};
     let files = contents_of_directory(folder.as_ref(), "md")?;
-    let mut posts: Vec<Document> = files.par_iter().filter_map(|path| {
-        let contents = match slurp(path) {
-            Ok(c) => c, Err(e) => {
-                println!("Can't read {:?}: {:?}", &path, &e);
-                return None;
-            }
-        };
-        let post = match Document::new(&contents, &path, &config) {
-            Ok(a) => a, Err(e) => {
-                println!("Invalid Format {:?}: {:?}", &path, &e);
-                return None;
-            }
-        };
-        Some(post)
-    }).collect();
+    let mut posts: Vec<Document> = files
+        .par_iter()
+        .filter_map(|path| {
+            let contents = match slurp(path) {
+                Ok(c) => c,
+                Err(e) => {
+                    println!("Can't read {:?}: {:?}", &path, &e);
+                    return None;
+                }
+            };
+            let post = match Document::new(&contents, &path, &config) {
+                Ok(a) => a,
+                Err(e) => {
+                    println!("Invalid Format {:?}: {:?}", &path, &e);
+                    return None;
+                }
+            };
+            Some(post)
+        })
+        .collect();
     Ok(posts)
 }
 
@@ -84,20 +104,18 @@ fn slug_from_frontmatter(front_matter: &FrontMatter) -> String {
     format!("{}-{}-{}-{}.html", d.year(), d.month(), d.day(), title)
 }
 
-
-
 // Transform the AST of the markdown to support custom markdown constructs
 fn markdown_to_html(markdown: &str) -> ParseResult {
     let parser = Parser::new(markdown);
     let mut events: Vec<Event> = Vec::new();
     let mut result = ParseResult {
         content: String::new(),
-        sections: Vec::new()
+        sections: Vec::new(),
     };
 
     let mut handlers: Vec<Box<dyn EventHandler>> = vec![
         Box::new(SectionEventHandler::new()),
-        Box::new(HighlightEventHandler::new())
+        Box::new(HighlightEventHandler::new()),
     ];
 
     for event in parser {
@@ -134,8 +152,8 @@ More text
 
     #[test]
     fn test_naming() {
-        use crate::front_matter;
         use crate::document;
+        use crate::front_matter;
         let contents = r#"
 [frontMatter]
 title = "Hello World"
@@ -146,7 +164,8 @@ published = true
 [meta]
 ---
 this is the actual article contents yeah."#;
-        let (frontmatter, _) = front_matter::parse_front_matter(&contents, "yeah.md", &Default::default()).unwrap();
+        let (frontmatter, _) =
+            front_matter::parse_front_matter(&contents, "yeah.md", &Default::default()).unwrap();
         let slug = document::slug_from_frontmatter(&frontmatter);
         assert_eq!(slug, "2009-12-30-hello-world.html");
     }

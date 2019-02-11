@@ -1,16 +1,14 @@
 use crate::config::Config;
 
 use actix::prelude::*;
-use actix_web::{
-    fs, http, middleware, server, ws, App, Error, HttpRequest, HttpResponse
-};
-use std::time::{Instant, Duration};
+use actix_web::{fs, http, middleware, server, ws, App, Error, HttpRequest, HttpResponse};
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
-
+use std::time::{Duration, Instant};
 
 pub fn auto_reload_code(config: &Config) -> String {
-    format!(r#"
+    format!(
+        r#"
 <script language="Javascript">
     var wsUri = (window.location.protocol=='https:'&&'wss://'||'ws://')+window.location.host + '{}';
     let exampleSocket = new WebSocket(wsUri);
@@ -25,16 +23,18 @@ pub fn auto_reload_code(config: &Config) -> String {
       }}
     }}
 </script>
-    "#, &config.server.auto_reload_websocket_path)
+    "#,
+        &config.server.auto_reload_websocket_path
+    )
 }
 
 #[derive(Message)]
 enum ReloadMessage {
-    Reload
+    Reload,
 }
 
 struct ReloadWebSocketActor {
-    last_handle: Option<SpawnHandle>
+    last_handle: Option<SpawnHandle>,
 }
 
 impl Actor for ReloadWebSocketActor {
@@ -46,9 +46,7 @@ impl Actor for ReloadWebSocketActor {
 
 impl ReloadWebSocketActor {
     fn new() -> Self {
-      ReloadWebSocketActor {
-          last_handle: None
-      }
+        ReloadWebSocketActor { last_handle: None }
     }
 
     fn hb(&self, ctx: &mut <Self as Actor>::Context) {
@@ -65,7 +63,7 @@ impl ReloadWebSocketActor {
             let wrapped_receiver = &ctx.state().state.clone();
             let r = match wrapped_receiver {
                 Some(x) => x,
-                None => return
+                None => return,
             };
             let x = r.lock().unwrap();
             let mut iter = x.try_iter();
@@ -102,42 +100,53 @@ impl Handler<ReloadMessage> for ReloadWebSocketActor {
 }
 
 impl StreamHandler<ws::Message, ws::ProtocolError> for ReloadWebSocketActor {
-    fn handle(&mut self, msg: ws::Message, ctx: &mut Self::Context) {
-    }
+    fn handle(&mut self, msg: ws::Message, ctx: &mut Self::Context) {}
 }
 
 struct AppState {
-    state: Option<Arc<Mutex<Receiver<bool>>>>
+    state: Option<Arc<Mutex<Receiver<bool>>>>,
 }
 
 pub fn run_file_server(reload_receiver: Option<Receiver<bool>>, config: &Config) {
     let sys = actix::System::new("techou");
 
-    let folder = config.folders.output_folder_path().to_str()
-        .expect("Expect output folder to serve").to_string();
+    let folder = config
+        .folders
+        .output_folder_path()
+        .to_str()
+        .expect("Expect output folder to serve")
+        .to_string();
     let ws_path = config.server.auto_reload_websocket_path.clone();
 
-    println!("Serving '{:?}' on {}", &folder, &config.server.server_address);
+    println!(
+        "Serving '{:?}' on {}",
+        &folder, &config.server.server_address
+    );
     let receiver: Option<Arc<Mutex<Receiver<bool>>>> = match reload_receiver {
         Some(o) => Some(Arc::new(Mutex::new(o))),
-        None => None
+        None => None,
     };
 
     server::new(move || {
-        App::with_state(AppState { state: receiver.clone() })
-            .resource(&ws_path, |r| r.method(http::Method::GET).f(|req| {
-                ws::start(req, ReloadWebSocketActor::new())
-            }))
-            .handler(
-                "/",
-                fs::StaticFiles::new(&folder)
-                    .unwrap()
-                    .show_files_listing())
-            .finish()
+        App::with_state(AppState {
+            state: receiver.clone(),
+        })
+        .resource(&ws_path, |r| {
+            r.method(http::Method::GET)
+                .f(|req| ws::start(req, ReloadWebSocketActor::new()))
+        })
+        .handler(
+            "/",
+            fs::StaticFiles::new(&folder).unwrap().show_files_listing(),
+        )
+        .finish()
     })
-        .bind(&config.server.server_address)
-        .expect(&format!("Can not bind to {}", &config.server.server_address))
-        .start();
+    .bind(&config.server.server_address)
+    .expect(&format!(
+        "Can not bind to {}",
+        &config.server.server_address
+    ))
+    .start();
 
     sys.run();
 }
