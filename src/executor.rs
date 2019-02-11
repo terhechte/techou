@@ -1,10 +1,6 @@
-use std::path::Path;
-
-use rayon::prelude::*;
-
 use crate::builder;
 use crate::config::Config;
-use crate::document::{documents_in_folder, Document};
+use crate::document::documents_in_folder;
 use crate::document_operations::*;
 use crate::error::Result;
 use crate::feeds;

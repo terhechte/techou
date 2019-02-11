@@ -1,9 +1,9 @@
+use chrono::{DateTime, Local};
+
 use crate::config::Config;
 use crate::front_matter;
 use crate::io_utils;
 use crate::utils;
-use chrono::{naive::NaiveDate, DateTime, Local};
-use std::sync::mpsc::channel;
 
 pub fn interactive(config: &Config) {
     let local: DateTime<Local> = Local::now();
@@ -96,7 +96,7 @@ pub fn interactive(config: &Config) {
     }
     let front_matter = front_matter::default_front_matter(&options.title, &options.date);
     let content = front_matter::join_front_matter_with_content(&front_matter, "\n# Hello World");
-    io_utils::spit(&post_path, &content);
+    io_utils::spit(&post_path, &content).expect("Could not write to path");
     println!("Created new post {:?}", &post_path);
     ::std::process::exit(0);
 }

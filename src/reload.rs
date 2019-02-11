@@ -1,12 +1,12 @@
-use std::path;
-use std::sync::mpsc;
-use std::time::Duration;
-
 use notify::DebouncedEvent::*;
 use notify::RecursiveMode::*;
 use notify::Watcher;
 
 use crate::config::Config;
+
+use std::path;
+use std::sync::mpsc;
+use std::time::Duration;
 
 pub fn reload<ActionFn>(
     paths: Vec<path::PathBuf>,
@@ -40,7 +40,6 @@ where
         Ok(w) => w,
         Err(e) => {
             panic!("Error while trying to watch the files:\n\n\t{:?}", e);
-            ::std::process::exit(1)
         }
     };
 
@@ -48,7 +47,6 @@ where
     for folder in folders {
         if let Err(e) = watcher.watch(&folder, Recursive) {
             panic!("Error while watching {:?}:\n    {:?}", &folder, e);
-            ::std::process::exit(1);
         };
     }
 

@@ -1,15 +1,13 @@
-use std::path::Path;
-
 use rayon::prelude::*;
 
 use crate::config::Config;
-use crate::document::{documents_in_folder, Document};
+use crate::document::Document;
 use crate::error::Result;
-use crate::feeds;
-use crate::io_utils::*;
 use crate::list::*;
 use crate::template::Templates;
 use crate::utils;
+
+use std::path::Path;
 
 pub struct Builder<'a> {
     context: DocumentContext<'a>,
@@ -134,23 +132,17 @@ impl<'a> Builder<'a> {
             .join(folder.as_ref());
         let mut state: (Option<Page>, Option<Page>) = (None, None);
         let mut iter = posts.chunks(per_page).enumerate().peekable();
-        let mut index_page = 0;
         loop {
             let (index, chunk) = match iter.next() {
                 Some(o) => o,
                 None => break,
             };
 
-            let (filename, title) = match index {
-                0 => ("index.html".to_string(), "Index".to_string()),
-                _ => (
-                    format!("index-{}.html", &index),
-                    format!("Index - Page {}", index_page),
-                ),
-            };
+            let (filename, title) = make_title(index);
 
+            let (_, future_title) = make_title(index + 1);
             state.0 = iter.peek().map(|(index, chunk)| Page {
-                title: format!("Index - Page {}", index + 1),
+                title: future_title,
                 index: *index,
                 items: chunk.len(),
                 path: filename.clone(),
@@ -183,7 +175,6 @@ impl<'a> Builder<'a> {
                 items: chunk.len(),
                 path: filename.clone(),
             });
-            index_page += 1;
         }
         Ok(())
     }

@@ -1,12 +1,9 @@
-use std::error;
-use std::fmt::{self, Display, Formatter};
-use std::io;
-use std::result;
-
 use tera;
 use toml;
 
-use err_derive::*;
+use std::io;
+use std::result;
+
 
 #[derive(Debug, err_derive::Error)]
 pub enum TechouError {

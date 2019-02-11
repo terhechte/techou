@@ -1,8 +1,8 @@
 use rss::{extension, ChannelBuilder, Item, ItemBuilder};
 
-use crate::config::{Config, ConfigRSS};
+use crate::config::Config;
 use crate::document::Document;
-use crate::error::{Result, TechouError};
+use crate::error::Result;
 use crate::io_utils::spit;
 
 use std::path::Path;
@@ -37,6 +37,5 @@ pub fn write_posts_rss<A: AsRef<Path>>(
         .items(items)
         .build()
         .unwrap();
-    spit(to_path, &channel.to_string());
-    Ok(())
+    spit(to_path, &channel.to_string())
 }

@@ -1,12 +1,11 @@
 use copy_dir::*;
 
+use crate::error::*;
+
 use std::ffi::OsStr;
-use std::fs::File;
 use std::fs::{create_dir_all, read_dir};
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
-
-use crate::error::*;
 
 pub fn slurp<T: AsRef<Path>>(path: T) -> Result<String> {
     use std::fs::File;
@@ -86,7 +85,7 @@ pub fn copy_items_to_directory<A: AsRef<Path>>(
         println!("copy '{:?}' to '{:?}'", &source, &target);
         // We copy each item seperately, so we can see when it fails
         match copy_dir(&source, &target) {
-            Ok(ref e) if e.len() > 0 => e.iter().for_each(|m| println!("Could not copy {:?}", &e)),
+            Ok(ref e) if e.len() > 0 => e.iter().for_each(|_| println!("Could not copy {:?}", &e)),
             Err(e) => println!("Copy Error: {:?}", &e),
             _ => (),
         };

@@ -1,10 +1,7 @@
 use serde::Serialize;
 use serde_derive::Serialize;
-use std::collections::BTreeMap;
 
-use crate::config::Config;
 use crate::document::Document;
-use rayon::prelude::*;
 
 #[derive(Serialize, Debug)]
 pub struct Year<'a> {

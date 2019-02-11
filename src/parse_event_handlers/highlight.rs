@@ -1,35 +1,32 @@
-use super::*;
-use std::borrow::Cow;
-
-use syntect::easy::HighlightLines;
-use syntect::highlighting::{Style, ThemeSet};
 use syntect::html::{tokens_to_classed_html, ClassStyle};
 use syntect::parsing::{ParseState, SyntaxSet};
+
+use super::*;
+
+use std::borrow::Cow;
+
 
 pub struct HighlightEventHandler {
     next_text_is_code: bool,
     language: String,
     current_code: String,
-    syntax_set: SyntaxSet,
-    theme_set: ThemeSet,
+    syntax_set: SyntaxSet
 }
 
 impl HighlightEventHandler {
     pub fn new() -> HighlightEventHandler {
         let ps = SyntaxSet::load_defaults_newlines();
-        let ts = ThemeSet::load_defaults();
         HighlightEventHandler {
             next_text_is_code: false,
             language: "text".to_owned(),
             current_code: String::new(),
-            syntax_set: ps,
-            theme_set: ts,
+            syntax_set: ps
         }
     }
 }
 
 impl EventHandler for HighlightEventHandler {
-    fn handle(&mut self, event: &Event, result: &mut ParseResult, events: &mut Vec<Event>) -> bool {
+    fn handle(&mut self, event: &Event, _result: &mut ParseResult, events: &mut Vec<Event>) -> bool {
         match &event {
             &Event::Start(Tag::CodeBlock(ref lang)) => {
                 self.next_text_is_code = true;

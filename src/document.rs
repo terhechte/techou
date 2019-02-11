@@ -1,18 +1,17 @@
-use std::collections::HashMap;
-use std::path::Path;
+use chrono::Datelike;
+use pulldown_cmark::{html, Event, Parser};
+use rayon::prelude::*;
+use serde_derive::Serialize;
 
 use crate::config::Config;
-use crate::error::{Result, ResultContext, TechouError};
+use crate::error::{Result, TechouError};
 use crate::front_matter::{parse_front_matter, FrontMatter};
 use crate::parse_event_handlers::{
     highlight::HighlightEventHandler, section::SectionEventHandler, EventHandler, ParseResult,
 };
 use crate::utils;
 
-use chrono::Datelike;
-use pulldown_cmark::{html, Event, Parser, Tag};
-use rayon::prelude::*;
-use serde_derive::Serialize;
+use std::path::Path;
 
 #[derive(Serialize, Debug)]
 pub struct SimilarDocument {
@@ -70,7 +69,7 @@ impl Document {
 pub fn documents_in_folder<A: AsRef<Path>>(folder: A, config: &Config) -> Result<Vec<Document>> {
     use crate::io_utils::{contents_of_directory, slurp};
     let files = contents_of_directory(folder.as_ref(), "md")?;
-    let mut posts: Vec<Document> = files
+    let posts: Vec<Document> = files
         .par_iter()
         .filter_map(|path| {
             let contents = match slurp(path) {

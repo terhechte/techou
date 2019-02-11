@@ -1,24 +1,15 @@
 use chrono::{Datelike, NaiveDate, NaiveDateTime, Timelike};
-use serde;
 use serde_derive::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::path::Path;
 use toml::de::from_str;
+use pulldown_cmark::{html, Parser};
 
 use crate::config::Config;
 use crate::error::{Result, TechouError};
 
-use pulldown_cmark::{html, Parser};
+use std::collections::HashMap;
+use std::path::Path;
 
 static DEFAULT_FRONT_MATTER_SEP: &str = "\n---\n";
-
-static DEFAULT_FRONT_MATTER: &str = r#"[frontMatter]
-title = "{}"
-tags = []
-created = "{}"
-description = ""
-published = false
-"#;
 
 fn default_nativetime() -> NaiveDateTime {
     NaiveDate::from_ymd(2016, 7, 8).and_hms(9, 10, 11)
@@ -74,8 +65,7 @@ pub struct FrontMatter {
 
 impl FrontMatter {
     pub fn rfc2822(&self) -> String {
-        use chrono::format::Item;
-        use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
+        use chrono::{DateTime, Utc};
         let dt = DateTime::<Utc>::from_utc(self.date.clone(), Utc);
         return dt.to_rfc2822();
     }
@@ -128,18 +118,13 @@ pub fn parse_front_matter<'a, A: AsRef<Path>>(
 }
 
 pub fn default_front_matter(title: &str, date: &str) -> String {
-    format!(
-        r#"[frontMatter]
+    format!(r#"[frontMatter]
 title = "{}"
 tags = []
 created = "{}"
 description = ""
 published = false
----
-
-# Hello World"#,
-        &title, &date
-    )
+"#, &title, &date)
 }
 
 pub fn join_front_matter_with_content(front_matter: &str, content: &str) -> String {
@@ -149,7 +134,7 @@ pub fn join_front_matter_with_content(front_matter: &str, content: &str) -> Stri
 fn detect_front_matter<'a, A: AsRef<Path>>(
     input: &'a str,
     filename: A,
-    config: &Config,
+    _config: &Config,
 ) -> Result<(&'a str, &'a str)> {
     let index = match input.find(DEFAULT_FRONT_MATTER_SEP) {
         Some(r) => r,
@@ -247,7 +232,9 @@ this."#;
     #[test]
     fn test_default_front_matter() {
         use crate::front_matter;
-        let content = front_matter::default_front_matter("we're default", "2009-12-30");
+        let mut content = front_matter::default_front_matter("we're default", "2009-12-30");
+        content.push_str(front_matter::DEFAULT_FRONT_MATTER_SEP);
+        content.push_str("Hello Jo");
         let (fm, _) =
             front_matter::parse_front_matter(&content, "yeah.md", &Default::default()).unwrap();
         assert_eq!(fm.title, "we're default");

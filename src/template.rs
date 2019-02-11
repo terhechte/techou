@@ -1,8 +1,6 @@
-use std::path::Path;
-
 use serde::Serialize;
 use serde_derive::Serialize;
-use tera::{Context, Tera};
+use tera::Tera;
 
 use crate::config::Config;
 use crate::document::Document;
@@ -10,7 +8,8 @@ use crate::error::*;
 use crate::io_utils::spit;
 use crate::list::*;
 use crate::server::auto_reload_code;
-use toml::Value;
+
+use std::path::Path;
 
 pub struct Templates {
     tera: Tera,

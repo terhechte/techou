@@ -1,19 +1,15 @@
-use serde::Serialize;
-use serde_derive::Serialize;
-use std::collections::BTreeMap;
-
-use crate::config::Config;
 use crate::document::{Document, SimilarDocument};
 use crate::list::*;
-use rayon::prelude::*;
+
+use std::collections::BTreeMap;
 
 pub fn posts_by_date<'a>(posts: &'a Vec<Document>) -> Vec<Year<'a>> {
     let mut date_map: BTreeMap<i32, BTreeMap<u32, Vec<&'a Document>>> = BTreeMap::new();
     for post in posts {
-        let mut year = date_map
+        let year = date_map
             .entry(post.info.date_info.year)
             .or_insert(BTreeMap::new());
-        let mut month = year.entry(post.info.date_info.month).or_insert(Vec::new());
+        let month = year.entry(post.info.date_info.month).or_insert(Vec::new());
         month.push(post);
     }
     date_map
@@ -33,7 +29,7 @@ pub fn posts_by_tag<'a, D: AsRef<Document>>(posts: &'a Vec<D>) -> Vec<Tag<'a>> {
     for post in posts {
         let post = post.as_ref();
         for tag in &post.info.tags {
-            let mut tags = tag_map.entry(&tag).or_insert(Vec::new());
+            let tags = tag_map.entry(&tag).or_insert(Vec::new());
             tags.push(post);
         }
     }
@@ -126,6 +122,7 @@ mod tests {
         assert_eq!(d[1].identifier, "3");
     }
 
+    #[test]
     fn test_relevance_hard() {
         use crate::document_operations::documents_by_similarity;
         let t1 = self::make_doc(

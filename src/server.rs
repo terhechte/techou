@@ -1,10 +1,11 @@
+use actix::prelude::*;
+use actix_web::{fs, http, server, ws, App};
+
 use crate::config::Config;
 
-use actix::prelude::*;
-use actix_web::{fs, http, middleware, server, ws, App, Error, HttpRequest, HttpResponse};
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::{Duration};
 
 pub fn auto_reload_code(config: &Config) -> String {
     format!(
@@ -66,7 +67,7 @@ impl ReloadWebSocketActor {
                 None => return,
             };
             let x = r.lock().unwrap();
-            let mut iter = x.try_iter();
+            let iter = x.try_iter();
             // Consume the iterator while also getting the last value. if we have
             // one value, it is true, if we have more values, the last is also true
             // This way, we only reload once even if multiple `reload`s did make it into the iterator
@@ -100,7 +101,7 @@ impl Handler<ReloadMessage> for ReloadWebSocketActor {
 }
 
 impl StreamHandler<ws::Message, ws::ProtocolError> for ReloadWebSocketActor {
-    fn handle(&mut self, msg: ws::Message, ctx: &mut Self::Context) {}
+    fn handle(&mut self, _msg: ws::Message, _ctx: &mut Self::Context) {}
 }
 
 struct AppState {

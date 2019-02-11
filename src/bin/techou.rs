@@ -1,8 +1,8 @@
 use clap::{App, Arg, SubCommand};
-use std::env;
-use std::path;
 
 extern crate techou;
+
+use std::path;
 
 fn main() {
     let matches = App::new("techou")
@@ -68,7 +68,7 @@ fn main() {
                 &path
             );
         }
-        techou::io_utils::spit(&path, techou::config::Config::exampleConfig());
+        techou::io_utils::spit(&path, techou::config::Config::example_config()).expect("Expect to write config");
         println!("New Config '{:?}' created.", &path);
         ::std::process::exit(0);
     }
@@ -84,11 +84,11 @@ fn main() {
     // If the server is on, the user is debugging, and we perform the auto reload
     config.server.auto_reload_browser_via_websocket_on_change = should_serve;
 
-    if let Some(matches) = matches.subcommand_matches("new") {
+    if let Some(_matches) = matches.subcommand_matches("new") {
         techou::new_post::interactive(&config);
     }
 
-    let load_fn = |path: &path::Path, config: &techou::config::Config| {
+    let load_fn = |_path: &path::Path, config: &techou::config::Config| {
         match techou::executor::execute(false, &config) {
             Err(e) => println!("Error: {:?}", &e),
             _ => (),

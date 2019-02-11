@@ -1,10 +1,12 @@
 use serde_derive::{Deserialize, Serialize};
+
+use crate::error::*;
+use crate::io_utils::slurp;
+
 use std::collections::HashMap;
 use std::env;
 use std::path::PathBuf;
 
-use crate::error::*;
-use crate::io_utils::slurp;
 
 static DEFAULT_PROJECT_TOML: &str = r#"
 [Project]
@@ -252,7 +254,7 @@ impl Config {
         Config::toml(&contents, &parent)
     }
 
-    pub fn exampleConfig() -> &'static str {
+    pub fn example_config() -> &'static str {
         DEFAULT_PROJECT_TOML
     }
 }

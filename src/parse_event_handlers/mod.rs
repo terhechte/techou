@@ -1,4 +1,4 @@
-use pulldown_cmark::{html, Event, Parser, Tag};
+use pulldown_cmark::{Event, Tag};
 
 pub trait EventHandler {
     fn handle(&mut self, event: &Event, result: &mut ParseResult, events: &mut Vec<Event>) -> bool;
