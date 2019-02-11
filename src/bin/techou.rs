@@ -57,7 +57,7 @@ fn main() {
     let should_serve = matches.is_present("serve");
 
     if let Some(matches) = matches.subcommand_matches("create") {
-        if project_file.len() > 0 {
+        if !project_file.is_empty() {
             panic!("You can't use --project-file / -f together with 'create'")
         }
         let new_project_file = matches.value_of("filename").unwrap_or("project.toml");
@@ -98,17 +98,17 @@ fn main() {
     // Do the first call
     load_fn(&path::PathBuf::from(root_dir), &config);
 
-    let mut reload_receiver: Option<::std::sync::mpsc::Receiver<bool>> = None;
-    if should_watch {
+    //let mut reload_receiver: Option<::std::sync::mpsc::Receiver<bool>> = None;
+    let reload_receiver = if should_watch {
         let mut paths = vec![
             config.folders.public_folder_path(),
             config.folders.posts_folder_path(),
         ];
-        if project_file.len() > 0 {
+        if !project_file.is_empty() {
             paths.push(path::PathBuf::from(&project_file));
         }
-        reload_receiver = Some(techou::reload::reload(paths, &config, load_fn));
-    }
+        Some(techou::reload::reload(paths, &config, load_fn))
+    } else { None };
 
     if should_serve {
         techou::server::run_file_server(reload_receiver, &config);

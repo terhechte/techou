@@ -93,8 +93,7 @@ pub fn documents_in_folder<A: AsRef<Path>>(folder: A, config: &Config) -> Result
 }
 
 fn slug_from_frontmatter(front_matter: &FrontMatter) -> String {
-    // If we have a slug in the meta attributes, use that (Document this!)
-    if let Some(slug) = front_matter.meta.get("slug") {
+    if let Some(slug) = &front_matter.slug {
         return slug.clone();
     }
     // make lowercase ascii-only title
@@ -120,9 +119,7 @@ fn markdown_to_html(markdown: &str) -> ParseResult {
     for event in parser {
         let mut ignore_event = false;
         for handler in handlers.iter_mut() {
-            if handler.handle(&event, &mut result, &mut events) == false {
-                ignore_event = true;
-            }
+            ignore_event = !handler.handle(&event, &mut result, &mut events);
         }
         if !ignore_event {
             events.push(event);

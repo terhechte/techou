@@ -42,11 +42,17 @@ impl From<NaiveDateTime> for DateInfo {
 pub struct FrontMatter {
     pub title: String,
     pub tags: Vec<String>,
+    #[serde(default)]
+    pub keywords: Vec<String>,
     pub created: String,
     pub description: String,
     #[serde(default)]
     pub description_html: String,
     pub published: bool,
+
+    // If this is non-empty, use it instead of the generated one
+    #[serde(default)]
+    pub slug: Option<String>,
 
     // The Meta Information will be injected
     #[serde(default, skip)]
@@ -66,8 +72,8 @@ pub struct FrontMatter {
 impl FrontMatter {
     pub fn rfc2822(&self) -> String {
         use chrono::{DateTime, Utc};
-        let dt = DateTime::<Utc>::from_utc(self.date.clone(), Utc);
-        return dt.to_rfc2822();
+        let dt = DateTime::<Utc>::from_utc(self.date, Utc);
+        dt.to_rfc2822()
     }
 }
 
@@ -239,5 +245,24 @@ this."#;
             front_matter::parse_front_matter(&content, "yeah.md", &Default::default()).unwrap();
         assert_eq!(fm.title, "we're default");
         assert!(fm.rfc2822().len() > 0);
+    }
+
+    #[test]
+    fn test_kewywords() {
+        use crate::front_matter;
+        let contents = r#"
+[frontMatter]
+title = "Hello World"
+tags = ["first tag", "second tag"]
+keywords = ["first keyword", "second keyword"]
+created = "2009-12-30"
+description = "A run around the world"
+published = true
+---
+this."#;
+        let (fm, _) =
+            front_matter::parse_front_matter(&contents, "yeah.md", &Default::default()).unwrap();
+        assert_eq!(fm.keywords.len(), 2);
+        assert_eq!(fm.keywords[1], "second keyword");
     }
 }

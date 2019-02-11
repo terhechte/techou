@@ -33,11 +33,11 @@ impl<'a> Builder<'a> {
         template_writer: &'a Templates,
         config: &'a Config,
     ) -> Builder<'a> {
-        return Builder {
+        Builder {
             context,
             template_writer,
             config,
-        };
+        }
     }
 
     /// Write the posts to the folder `folder` with template writer `writer`
@@ -45,7 +45,7 @@ impl<'a> Builder<'a> {
     /// output folder as part of the name.
     /// If `html/posts` is your output folder / posts folder, then `posts` would be
     /// the correct value for `folder`
-    pub fn posts<A: AsRef<Path>>(&self, posts: &Vec<Document>, folder: A) -> Result<()> {
+    pub fn posts<A: AsRef<Path>>(&self, posts: &[Document], folder: A) -> Result<()> {
         let folder = self
             .config
             .folders
@@ -64,7 +64,7 @@ impl<'a> Builder<'a> {
         Ok(())
     }
 
-    pub fn pages<A: AsRef<Path>>(&self, pages: &Vec<Document>, folder: A) -> Result<()> {
+    pub fn pages<A: AsRef<Path>>(&self, pages: &[Document], folder: A) -> Result<()> {
         let folder = self
             .config
             .folders
@@ -84,7 +84,7 @@ impl<'a> Builder<'a> {
     }
 
     /// Write all the posts into one long index file.
-    pub fn index<A: AsRef<Path>>(&self, posts: &Vec<Document>, folder: A) -> Result<()> {
+    pub fn index<A: AsRef<Path>>(&self, posts: &[Document], folder: A) -> Result<()> {
         let folder = self
             .config
             .folders
@@ -95,7 +95,7 @@ impl<'a> Builder<'a> {
             &self.context,
             &List {
                 title: "Index",
-                posts: posts,
+                posts,
                 pagination: Pagination {
                     current: 0,
                     next: None,
@@ -117,7 +117,7 @@ impl<'a> Builder<'a> {
     /// `per_page` is the number of posts that should be on one page before a new one begins
     pub fn indexes_paged<A: AsRef<Path>, TitleFn>(
         &self,
-        posts: &Vec<Document>,
+        posts: &[Document],
         per_page: usize,
         make_title: TitleFn,
         folder: A,
@@ -132,11 +132,7 @@ impl<'a> Builder<'a> {
             .join(folder.as_ref());
         let mut state: (Option<Page>, Option<Page>) = (None, None);
         let mut iter = posts.chunks(per_page).enumerate().peekable();
-        loop {
-            let (index, chunk) = match iter.next() {
-                Some(o) => o,
-                None => break,
-            };
+        while let Some((index, chunk)) = iter.next() {
 
             let (filename, title) = make_title(index);
 
@@ -170,8 +166,8 @@ impl<'a> Builder<'a> {
                 Err(e) => println!("Could not write index {:?}: {:?}", &path, &e),
             }
             state.1 = Some(Page {
-                title: title,
-                index: index,
+                title,
+                index,
                 items: chunk.len(),
                 path: filename.clone(),
             });
@@ -180,7 +176,7 @@ impl<'a> Builder<'a> {
     }
 
     /// Write out documents for each tag with the articles for that tag
-    pub fn tags<A: AsRef<Path>>(&self, tag_posts: &Vec<Tag<'a>>, folder: A) -> Result<()> {
+    pub fn tags<A: AsRef<Path>>(&self, tag_posts: &[Category<'a>], folder: A) -> Result<()> {
         let folder = self
             .config
             .folders

@@ -22,7 +22,7 @@ where
     std::thread::spawn(move || {
         trigger_on_change(paths, |path| {
             action(path, &inner_config);
-            &reload_sender.send(true);
+            reload_sender.send(true);
             println!("Done");
         });
     });

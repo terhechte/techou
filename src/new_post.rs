@@ -44,13 +44,13 @@ pub fn interactive(config: &Config) {
                 _ => (),
             }
             match res {
-                Ok(_) if trimmed.len() == 0 => {
+                Ok(_) if trimmed.is_empty() => {
                     println!("You have to enter a value");
                     continue;
                 }
                 Ok(_) => {
-                    match key {
-                        &"title" => {
+                    match *key {
+                        "title" => {
                             // FIXME: there should be a config option with format syntax that
                             // allows the user to define how to generate post names
                             options.filename = utils::slugify(&trimmed);
@@ -58,7 +58,7 @@ pub fn interactive(config: &Config) {
                             options.title = trimmed;
                             break;
                         }
-                        &"date" => {
+                        "date" => {
                             match front_matter::detect_date_time(&trimmed, &config) {
                                 Ok(d) => {
                                     options.date = d.0;
@@ -71,7 +71,7 @@ pub fn interactive(config: &Config) {
                             }
                             continue;
                         }
-                        &"filename" => {
+                        "filename" => {
                             options.filename = trimmed;
                             break;
                         }

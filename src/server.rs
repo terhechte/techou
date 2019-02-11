@@ -52,7 +52,7 @@ impl ReloadWebSocketActor {
 
     fn hb(&self, ctx: &mut <Self as Actor>::Context) {
         {
-            if &ctx.state().state.is_none() == &true {
+            if ctx.state().state.is_none() == true {
                 return;
             }
         }
@@ -143,10 +143,10 @@ pub fn run_file_server(reload_receiver: Option<Receiver<bool>>, config: &Config)
         .finish()
     })
     .bind(&config.server.server_address)
-    .expect(&format!(
+    .unwrap_or_else(|_| panic!(format!(
         "Can not bind to {}",
         &config.server.server_address
-    ))
+    )))
     .start();
 
     sys.run();

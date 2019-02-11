@@ -16,7 +16,7 @@ pub struct Month<'a> {
 }
 
 #[derive(Serialize, Debug)]
-pub struct Tag<'a> {
+pub struct Category<'a> {
     pub name: &'a str,
     pub count: u32,
     pub posts: Vec<&'a Document>,
@@ -45,7 +45,8 @@ pub struct DocumentContext<'a> {
     pub pages: &'a Vec<Document>,
     pub posts: &'a Vec<Document>,
     pub by_date: &'a Vec<Year<'a>>,
-    pub by_tag: &'a Vec<Tag<'a>>,
+    pub by_tag: &'a Vec<Category<'a>>,
+    pub by_keyword: &'a Vec<Category<'a>>,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -79,8 +80,8 @@ where
 {
     pub fn index(title: &'a str, posts: &'a [D]) -> Self {
         List {
-            title: title,
-            posts: posts,
+            title,
+            posts,
             pagination: Default::default(),
         }
     }

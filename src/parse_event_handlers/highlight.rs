@@ -27,17 +27,17 @@ impl HighlightEventHandler {
 
 impl EventHandler for HighlightEventHandler {
     fn handle(&mut self, event: &Event, _result: &mut ParseResult, events: &mut Vec<Event>) -> bool {
-        match &event {
-            &Event::Start(Tag::CodeBlock(ref lang)) => {
+        match event {
+            Event::Start(Tag::CodeBlock(ref lang)) => {
                 self.next_text_is_code = true;
                 self.language = lang.to_string();
                 return false;
             }
-            &Event::Text(ref text) if self.next_text_is_code => {
+            Event::Text(ref text) if self.next_text_is_code => {
                 self.current_code.push_str(&text);
                 return false;
             }
-            &Event::End(Tag::CodeBlock(_)) => {
+            Event::End(Tag::CodeBlock(_)) => {
                 // try to find a syntax
                 let syntax = match self.syntax_set.find_syntax_by_name(&self.language) {
                     Some(s) => s,

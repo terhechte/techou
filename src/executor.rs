@@ -10,13 +10,12 @@ use crate::template::Templates;
 
 pub fn execute(ignore_errors: bool, config: &Config) -> Result<()> {
     match catchable_execute(&config) {
-        Ok(n) => Ok(n),
-        Err(e) => match ignore_errors {
-            true => {
-                println!("Error: {}", &e);
-                Ok(())
-            }
-            false => Err(e),
+        Ok(_) => Ok(()),
+        Err(e) => if ignore_errors {
+            println!("Error: {}", &e);
+            Ok(())
+        } else {
+            Err(e)
         },
     }
 }
@@ -44,9 +43,9 @@ fn catchable_execute(config: &Config) -> Result<()> {
     let template_writer = Templates::new(&config.folders.public_folder_path()).unwrap();
 
     let pages = documents_in_folder(&config.folders.pages_folder_path(), &config)?;
-    let by_tag = posts_by_tag(&posts);
-    // FIXME: By Year!
     let by_year = posts_by_date(&posts);
+    let by_tag = posts_by_array(&posts, |p| &p.info.tags);
+    let by_keyword = posts_by_array(&posts, |p| &p.info.keywords);
 
     let builder = builder::Builder::with_context(
         DocumentContext {
@@ -54,6 +53,7 @@ fn catchable_execute(config: &Config) -> Result<()> {
             pages: &pages,
             by_date: &by_year,
             by_tag: &by_tag,
+            by_keyword: &by_keyword,
         },
         &template_writer,
         &config,

@@ -8,7 +8,7 @@ use crate::io_utils::spit;
 use std::path::Path;
 
 pub fn write_posts_rss<A: AsRef<Path>>(
-    posts: &Vec<Document>,
+    posts: &[Document],
     to_path: A,
     config: &Config,
 ) -> Result<()> {

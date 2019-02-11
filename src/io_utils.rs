@@ -29,7 +29,7 @@ pub fn spit<A: AsRef<Path>>(path: A, contents: &str) -> Result<()> {
         .create_new(true)
         .open(&path)
         .ctx(&path)?;
-    Ok(file.write_all(contents.as_bytes()).ctx(path)?)
+    file.write_all(contents.as_bytes()).ctx(path)
 }
 
 pub fn contents_of_directory<A: AsRef<Path>>(
@@ -71,7 +71,7 @@ pub fn clear_directory<A: AsRef<Path>>(directory: A) -> Result<()> {
 }
 
 pub fn copy_items_to_directory<A: AsRef<Path>>(
-    items: &Vec<String>,
+    items: &[String],
     from_dir: A,
     to_dir: A,
 ) -> Result<()> {
@@ -85,7 +85,8 @@ pub fn copy_items_to_directory<A: AsRef<Path>>(
         println!("copy '{:?}' to '{:?}'", &source, &target);
         // We copy each item seperately, so we can see when it fails
         match copy_dir(&source, &target) {
-            Ok(ref e) if e.len() > 0 => e.iter().for_each(|_| println!("Could not copy {:?}", &e)),
+            Ok(ref e) if !e.is_empty() => e.iter()
+                .for_each(|_| println!("Could not copy {:?}", &e)),
             Err(e) => println!("Copy Error: {:?}", &e),
             _ => (),
         };

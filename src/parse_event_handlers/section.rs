@@ -18,14 +18,14 @@ impl SectionEventHandler {
 
 impl EventHandler for SectionEventHandler {
     fn handle(&mut self, event: &Event, result: &mut ParseResult, events: &mut Vec<Event>) -> bool {
-        match &event {
-            &Event::Start(Tag::Header(_)) => {
+        match event {
+            Event::Start(Tag::Header(_)) => {
                 self.next_text_is_section = true;
             }
-            &Event::Text(ref text) if self.next_text_is_section => {
+            Event::Text(ref text) if self.next_text_is_section => {
                 self.current_header.push_str(&text);
             }
-            &Event::End(Tag::Header(_)) => {
+            Event::End(Tag::Header(_)) => {
                 self.next_text_is_section = false;
                 let header_number = (result.sections.len() as i32) + 1;
                 let text = std::mem::replace(&mut self.current_header, String::new());

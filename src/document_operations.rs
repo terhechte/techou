@@ -3,12 +3,12 @@ use crate::list::*;
 
 use std::collections::BTreeMap;
 
-pub fn posts_by_date<'a>(posts: &'a Vec<Document>) -> Vec<Year<'a>> {
+pub fn posts_by_date<'a>(posts: &'a [Document]) -> Vec<Year<'a>> {
     let mut date_map: BTreeMap<i32, BTreeMap<u32, Vec<&'a Document>>> = BTreeMap::new();
     for post in posts {
         let year = date_map
             .entry(post.info.date_info.year)
-            .or_insert(BTreeMap::new());
+            .or_insert_with(BTreeMap::new);
         let month = year.entry(post.info.date_info.month).or_insert(Vec::new());
         month.push(post);
     }
@@ -18,25 +18,27 @@ pub fn posts_by_date<'a>(posts: &'a Vec<Document>) -> Vec<Year<'a>> {
         .map(|(year, entries)| {
             Year::from((
                 year,
-                entries.into_iter().rev().map(|m| Month::from(m)).collect(),
+                entries.into_iter().rev().map(Month::from).collect(),
             ))
         })
         .collect()
 }
 
-pub fn posts_by_tag<'a, D: AsRef<Document>>(posts: &'a Vec<D>) -> Vec<Tag<'a>> {
+pub fn posts_by_array<'a, RetrieveFn, D: AsRef<Document>>(posts: &'a [D], retriever: RetrieveFn) -> Vec<Category<'a>>
+    where RetrieveFn: Fn(&Document) -> &[String] {
     let mut tag_map: BTreeMap<&'a str, Vec<&'a Document>> = BTreeMap::new();
     for post in posts {
         let post = post.as_ref();
-        for tag in &post.info.tags {
-            let tags = tag_map.entry(&tag).or_insert(Vec::new());
+        let strings = retriever(&post);
+        for tag in strings {
+            let tags = tag_map.entry(&tag).or_insert_with(Vec::new);
             tags.push(post);
         }
     }
     tag_map
         .into_iter()
         .rev()
-        .map(|(tag, entries)| Tag {
+        .map(|(tag, entries)| Category {
             name: tag,
             count: entries.len() as u32,
             posts: entries,
