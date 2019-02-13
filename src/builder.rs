@@ -16,16 +16,6 @@ pub struct Builder<'a> {
 }
 
 impl<'a> Builder<'a> {
-    /// Initialize a new Builder without a context. This means that the templates
-    /// Will not have access to `pages`, `posts`, `posts by tag` and `posts by date`
-    /// If you wish to have these, please use `Builder::with_contex`
-    /*pub fn new(template_writer: &'a Templates, config: &'a Config) -> Builder<'a> {
-        let context = DocumentContext {
-            pages: Vec::new(), posts: Vec::new(), by_tag: Vec::new(), by_date: Vec::new()
-        };
-        Builder { context, template_writer, config }
-    }*/
-
     /// Create a new builder with the template context for the template to access
     /// `pages`, `posts`, `posts by tag` and `posts by date`
     pub fn with_context(

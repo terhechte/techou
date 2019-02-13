@@ -12,6 +12,23 @@ use crate::filters;
 
 use std::path::Path;
 
+fn make_url_for(urls: std::collections::BTreeMap<String, String>) -> tera::GlobalFn {
+    Box::new(move |args| -> tera::Result<tera::Value> {
+        let id = match args.get("id") {
+            Some(val) => match tera::from_value::<String>(val.clone()) {
+                Ok(v) =>  v,
+                Err(_) => return Err("id parameter not found".into()),
+            },
+            None => return Err("id parameter not found".into()),
+        };
+        let entry = match urls.get(&id) {
+            Some(v) => v,
+            None => return Err(format!("No entity with id `{}` found", &id).into()),
+        };
+        tera::to_value(entry).map_err(|e| e.into())
+    })
+}
+
 pub struct Templates {
     tera: Tera,
 }
@@ -37,6 +54,18 @@ impl Templates {
         tera.register_filter("chunks", filters::chunks::chunk);
         tera.register_filter("split", filters::split::split);
         Ok(Templates { tera })
+    }
+
+    pub fn register_url_functions(&mut self, context: &DocumentContext, config: &Config) {
+        let post_urls: std::collections::BTreeMap<String, String> = context.posts.iter()
+            .map(|d|(d.identifier.clone(), format!("/{}/{}", config.folders.posts_folder_name, d.slug))).collect();
+        self.tera.register_function("url_post", make_url_for(post_urls));
+        let page_urls: std::collections::BTreeMap<String, String> = context.pages.iter()
+            .map(|d|(d.identifier.clone(), format!("/{}/{}", config.folders.pages_folder_name, d.slug))).collect();
+        self.tera.register_function("url_page", make_url_for(page_urls));
+        let tag_urls: std::collections::BTreeMap<String, String> = context.by_tag.iter()
+            .map(|t| (t.name.to_string(), format!("/{}/{}", config.folders.tags_folder_name, &t.name))).collect();
+        self.tera.register_function("url_tag", make_url_for(tag_urls));
     }
 
     pub fn write_post<'a, A: AsRef<Path>>(
