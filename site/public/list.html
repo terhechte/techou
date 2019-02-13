@@ -1,7 +1,14 @@
 <title>{{ content.title }}</title>
 <ul>
 {% for article in content.posts -%}
-  <li><a href="{{ article.slug }}">{{ article.info.title }}</a></li>
+  <li><a href="{{ article.slug }}">{{ article.info.title }}</a>
+	  {% if article.next_document %}
+	  <b>next: {{ article.next_document.title }}</b> * 
+	  {% endif %}
+	  {% if article.previous_document %}
+	  <b>previous: {{ article.previous_document.title }}</b>
+	  {% endif %}
+  </li>
 {%- endfor %}
 </ul>
 

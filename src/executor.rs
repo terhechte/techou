@@ -34,6 +34,8 @@ fn catchable_execute(config: &Config) -> Result<()> {
             .unwrap()
     });
 
+    make_document_siblings(&mut posts);
+
     // if we have more than 5 posts, start generating similarity
     if posts.len() >= 5 {
         // We want two similarity items for each post

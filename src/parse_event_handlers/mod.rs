@@ -6,7 +6,7 @@ pub trait EventHandler {
 
 pub struct ParseResult {
     pub content: String,
-    pub sections: Vec<(i32, String)>,
+    pub sections: Vec<(u32, String)>,
 }
 
 pub mod highlight;

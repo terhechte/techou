@@ -13,13 +13,12 @@ use crate::utils;
 
 use std::path::Path;
 
-#[derive(Serialize, Debug)]
-pub struct SimilarDocument {
+#[derive(Serialize, Debug, Clone)]
+pub struct DocumentLink {
     pub identifier: String,
     pub title: String,
     pub desc: String,
-    pub slug: String,
-    pub score: u32,
+    pub slug: String
 }
 
 #[derive(Serialize, Debug)]
@@ -29,8 +28,10 @@ pub struct Document {
     pub info: FrontMatter,
     pub slug: String,
     pub content: String,
-    pub sections: Vec<(i32, String)>,
-    pub similar_documents: Vec<SimilarDocument>,
+    pub sections: Vec<(u32, String)>,
+    pub similar_documents: Vec<(u32, DocumentLink)>,
+    pub previous_document: Option<DocumentLink>,
+    pub next_document: Option<DocumentLink>
 }
 
 impl AsRef<Document> for Document {
@@ -62,7 +63,20 @@ impl Document {
             content,
             sections,
             similar_documents: Vec::new(),
+            next_document: None,
+            previous_document: None
         })
+    }
+}
+
+impl Document {
+    pub fn link(&self) -> DocumentLink {
+        DocumentLink {
+            identifier: self.identifier.clone(),
+            title: self.info.title.clone(),
+            desc: self.info.description.clone(),
+            slug: self.slug.clone()
+        }
     }
 }
 

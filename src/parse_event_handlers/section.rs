@@ -27,7 +27,7 @@ impl EventHandler for SectionEventHandler {
             }
             Event::End(Tag::Header(_)) => {
                 self.next_text_is_section = false;
-                let header_number = (result.sections.len() as i32) + 1;
+                let header_number = (result.sections.len() as u32) + 1;
                 let text = std::mem::replace(&mut self.current_header, String::new());
                 result.sections.push((header_number, text));
                 // we insert a small identifier so that the header can be linked to

@@ -1,4 +1,4 @@
-use crate::document::{Document, SimilarDocument};
+use crate::document::{Document, DocumentLink};
 use crate::list::*;
 
 use std::collections::BTreeMap;
@@ -50,7 +50,7 @@ pub fn make_similarity(for_documents: &mut Vec<Document>, amount: usize) {
     // FIXME: Do I really need to do it this complicated? Can't have &mut and & (obviously)
     // so iterating over items while also calculating something for all items is impossible
     // This is surprisingly tricky. We currently expect that the order does not change.
-    let mut sims: Vec<Option<Vec<SimilarDocument>>> = for_documents
+    let mut sims: Vec<Option<Vec<(u32, DocumentLink)>>> = for_documents
         .iter()
         .map(|document| Some(documents_by_similarity(document, &for_documents, amount)))
         .collect();
@@ -59,11 +59,21 @@ pub fn make_similarity(for_documents: &mut Vec<Document>, amount: usize) {
     }
 }
 
+pub fn make_document_siblings(for_documents: &mut Vec<Document>) {
+    let mut previous: Option<DocumentLink> = None;
+    let mut iter = for_documents.iter_mut().peekable();
+    while let Some(doc) = iter.next() {
+        doc.previous_document = previous.take();
+        doc.next_document = iter.peek().map(|d|d.link());
+        previous = Some(doc.link());
+    }
+}
+
 pub fn documents_by_similarity<'a, D: AsRef<Document>>(
     to_document: &'a Document,
     in_documents: &'a [D],
     nr: usize,
-) -> Vec<SimilarDocument> {
+) -> Vec<(u32, DocumentLink)> {
     // sort by similarity index
     // rudimentary implementation. I can think of tons of better ways but we're trying
     // to finish this thing.
@@ -75,7 +85,7 @@ pub fn documents_by_similarity<'a, D: AsRef<Document>>(
     for tag in &to_document.info.tags {
         items.insert(tag);
     }
-    let mut sorted: Vec<SimilarDocument> = in_documents
+    let mut sorted: Vec<(u32, DocumentLink)> = in_documents
         .iter()
         .filter_map(|item| {
             let item = item.as_ref();
@@ -94,16 +104,10 @@ pub fn documents_by_similarity<'a, D: AsRef<Document>>(
             // current dist is:
             // 35% title, 35% desc, 20% tags
             let similarity = (((titlen * 0.35) + (descn * 0.35) + (tagn * 0.2)) * 100.0) as u32;
-            Some(SimilarDocument {
-                identifier: item.identifier.clone(),
-                title: item.info.title.clone(),
-                desc: item.info.description.clone(),
-                slug: item.slug.clone(),
-                score: similarity,
-            })
+            Some((similarity, item.link()))
         })
         .collect();
-    sorted.sort_by_key(|k| k.score);
+    sorted.sort_by_key(|k| k.0);
     sorted.into_iter().rev().take(nr).collect()
 }
 
@@ -120,8 +124,8 @@ mod tests {
         let t3 = self::make_doc("3", "judehei ", "hey yude", &["a", "b", "c"]);
         let docs = [t2, t3];
         let d = documents_by_similarity(&t1, &docs, 2);
-        assert_eq!(d[0].identifier, "2");
-        assert_eq!(d[1].identifier, "3");
+        assert_eq!(d[0].1.identifier, "2");
+        assert_eq!(d[1].1.identifier, "3");
     }
 
     #[test]
@@ -147,8 +151,8 @@ mod tests {
         );
         let docs = [t2, t3];
         let d = documents_by_similarity(&t1, &docs, 2);
-        assert_eq!(d[0].identifier, "2");
-        assert_eq!(d[1].identifier, "3");
+        assert_eq!(d[0].1.identifier, "2");
+        assert_eq!(d[1].1.identifier, "3");
     }
 
     fn make_doc(
@@ -181,6 +185,8 @@ this."#,
             content: "".to_string(),
             sections: Vec::new(),
             similar_documents: Vec::new(),
+            previous_document: None,
+            next_document: None
         }
     }
 }
