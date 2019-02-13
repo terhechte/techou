@@ -5,6 +5,13 @@
 {%- endfor %}
 </ul>
 
+<h1>lala</h1>
+<ul>
+{% for article in content.posts | chunks(size=2) -%}
+  <li><a href="{{ article[0].slug }}">{{ article[0].info.title }}</a> *** <a href="{{ article[1].slug }}">{{ article[1].info.title }}</a></li>
+{%- endfor %}
+</ul>
+
 <div>
 	<h3>current:{{ content.pagination.current }}</h3>
 	{% if content.pagination.next %}
