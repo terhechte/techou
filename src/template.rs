@@ -35,6 +35,7 @@ impl Templates {
         // We don't want to escape content. After all, this is a static engine
         tera.autoescape_on(vec![]);
         tera.register_filter("chunks", filters::chunks::chunk);
+        tera.register_filter("split", filters::split::split);
         Ok(Templates { tera })
     }
 

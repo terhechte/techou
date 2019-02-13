@@ -73,7 +73,7 @@ fn catchable_execute(config: &Config) -> Result<()> {
             format!("Index - Page {}", index),
         ),
     };
-    builder.indexes_paged(&posts, 3, title_fn, "")?;
+    builder.indexes_paged(&posts, config.project.posts_per_index as usize, title_fn, "")?;
 
     // Write the feed
     feeds::write_posts_rss(

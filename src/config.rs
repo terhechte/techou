@@ -12,6 +12,9 @@ static DEFAULT_PROJECT_TOML: &str = r#"
 [Project]
 keywords = ["nam", "nom", "grah"]
 
+# How many posts per index (default: 8)
+# postsPerIndex = 8
+
 [Folders]
 # Where are your posts
 postsFolder = "posts"
@@ -50,7 +53,11 @@ serverAddress = "127.0.0.1:8001"
 # twitter = "https://twitter.com/johndoe"
 "#;
 
-#[derive(Serialize, Deserialize, Clone, Default, Debug)]
+fn default_posts_per_index() -> u32 {
+    8
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ConfigProject {
     #[serde(default)]
@@ -59,6 +66,8 @@ pub struct ConfigProject {
     pub title: String,
     #[serde(default)]
     pub description: String,
+    #[serde(default = "default_posts_per_index")]
+    pub posts_per_index: u32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -162,6 +171,17 @@ impl Default for ConfigServer {
             server_address: "127.0.0.1:8001".to_string(),
             auto_reload_browser_via_websocket_on_change: false,
             auto_reload_websocket_path: "/ws/".to_string(),
+        }
+    }
+}
+
+impl Default for ConfigProject {
+    fn default() -> Self {
+        ConfigProject {
+            keywords: Default::default(),
+            title: Default::default(),
+            description: Default::default(),
+            posts_per_index: default_posts_per_index()
         }
     }
 }
