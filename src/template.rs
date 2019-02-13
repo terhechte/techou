@@ -8,6 +8,7 @@ use crate::error::*;
 use crate::io_utils::spit;
 use crate::list::*;
 use crate::server::auto_reload_code;
+use crate::filters;
 
 use std::path::Path;
 
@@ -33,6 +34,7 @@ impl Templates {
         let mut tera = Tera::new(&format!("{}/*.html", folder_path)).ctx(&folder_path)?;
         // We don't want to escape content. After all, this is a static engine
         tera.autoescape_on(vec![]);
+        tera.register_filter("chunks", filters::chunks::chunk);
         Ok(Templates { tera })
     }
 
