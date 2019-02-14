@@ -16,3 +16,4 @@ pub mod new_post;
 pub mod reload;
 pub mod server;
 pub mod utils;
+pub mod book;

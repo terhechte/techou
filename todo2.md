@@ -1,0 +1,5 @@
+- support for multiple "books"
+- books contain (like mdbook) a folder structure and a main .md file that shows the structure (like mdbook)
+- add support for my mdbook extensions for various markdown parsings
+- use techou as a library for this (temporary, a local)
+- improve the parsing speed for MD (see appventure)
