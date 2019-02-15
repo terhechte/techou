@@ -21,7 +21,8 @@ impl Book {
         let contents = slurp(&file)?;
         let (info, md) = parse_front_matter(&contents, &file, &config)?;
         let folder = file.as_ref().parent().expect("Expect the path for the book to have a parent folder");
-        let chapter_info = parse_chapter(md, &folder);
+        let book_folder = std::path::PathBuf::from(&config.folders.books_folder_name).join(folder);
+        let chapter_info = parse_chapter(md, &folder, &book_folder.as_path());
         let chapters: Vec<Chapter> = chapter_info.into_par_iter().filter_map(|c| match c.convert(&config) {
             Ok(s) => Some(s),
             Err(e) => {
@@ -47,6 +48,7 @@ pub struct ChapterLink {
 #[derive(Serialize, Debug)]
 pub struct Chapter {
     pub name: String,
+    pub slug: String,
     pub file_url: std::path::PathBuf,
     pub level: usize,
     pub document: Document,
@@ -92,6 +94,7 @@ impl ChapterInfo {
         }).collect();
         Ok(Chapter {
             name: self.name,
+            slug: self.slug,
             file_url: self.file_url,
             level: self.level,
             document: doc,
@@ -107,11 +110,13 @@ impl ChapterInfo {
 fn make_link<A: AsRef<std::path::Path>>(chapter: &ChapterInfo, folder: A) -> Option<ChapterLink> {
     Some(ChapterLink {
         name: chapter.name.clone(),
-        slug: chapter.slug.clone()
+        slug: chapter.slug.clone(), //folder.as_ref().join(&chapter.slug).to_str().unwrap().to_string()
     })
 }
 
-fn parse_chapter<A: AsRef<std::path::Path>>(content: &str, in_folder: A) -> Vec<ChapterInfo> {
+/// `in_folder` is the folder where the md file was loaded from. (i.e. /books/book1/ for /books/book1/summary.toml)
+/// `out_folder` is the absolute base folder for html (i.e. `/book1/` for `/book1/index.html` or `/books/book1/` for `/books/book1/index.html`)
+fn parse_chapter<A: AsRef<std::path::Path>>(content: &str, in_folder: A, out_folder: A) -> Vec<ChapterInfo> {
     // A non-recursive parsing of a tree data structure
     let mut parser = Parser::new(&content);
     let mut chapter_stack: Vec<ChapterInfo> = vec![Default::default()];
@@ -131,17 +136,17 @@ fn parse_chapter<A: AsRef<std::path::Path>>(content: &str, in_folder: A) -> Vec<
                 let uidx = chapter_stack[idx].sub_chapters.len() - 1;
 
                 // The parent is always the one on the chapter stack
-                chapter_stack[idx].sub_chapters[uidx].parent = make_link(&chapter_stack[idx], &in_folder);
+                chapter_stack[idx].sub_chapters[uidx].parent = make_link(&chapter_stack[idx], &out_folder);
 
                 // if we're the first in the sub-chapters, the previous is the parent
                 if uidx == 0 {
-                    chapter_stack[idx].sub_chapters[uidx].previous = make_link(&chapter_stack[idx], &in_folder);
-                    chapter_stack[idx].next = make_link(&chapter_stack[idx].sub_chapters[uidx], &in_folder);
+                    chapter_stack[idx].sub_chapters[uidx].previous = make_link(&chapter_stack[idx], &out_folder);
+                    chapter_stack[idx].next = make_link(&chapter_stack[idx].sub_chapters[uidx], &out_folder);
                 } else {
                     // if we already have a next, then don't set it. Otherwise we would override
                     // the next set from the first item in the sub_chapter
                     if chapter_stack[idx].sub_chapters[uidx - 1].next.is_none() {
-                        chapter_stack[idx].sub_chapters[uidx - 1].next = make_link(&chapter_stack[idx].sub_chapters[uidx], &in_folder);
+                        chapter_stack[idx].sub_chapters[uidx - 1].next = make_link(&chapter_stack[idx].sub_chapters[uidx], &out_folder);
                     }
                 }
             },
@@ -159,16 +164,20 @@ fn parse_chapter<A: AsRef<std::path::Path>>(content: &str, in_folder: A) -> Vec<
                     }
                 },
             Event::Start(Tag::Link(url, _)) => {
-                let path = in_folder.as_ref().join(&url.to_string()).to_path_buf();
-                chapter_stack.last_mut().map(|c|c.sub_chapters.last_mut().map(|c2| {
-                    c2.slug = format!("{:?}/{:?}", &in_folder.as_ref(), &path);
-                    c2.file_url = path;
-                }));
+                let path = out_folder.as_ref().join(&url.to_string()).to_path_buf();
+                // FIXEM: Set out_folder + url as slug for chapter_stack.last
+                chapter_stack.last_mut().map(|c| {
+                    //c.slug = out_folder.as_ref().join(&url).to_str().un
+                    c.sub_chapters.last_mut().map(|c2| {
+                        c2.slug = path.to_str().unwrap().replace(".md", ".html").to_string();
+                        c2.file_url = path;
+                    })
+                });
             },
             Event::End(Tag::Link(url, _)) => {
                 if let Some(item) = chapter_stack.last() {
                     if let Some(inner) = item.sub_chapters.last() {
-                        last_chapter_link = make_link(&inner, &in_folder);
+                        last_chapter_link = make_link(&inner, &out_folder);
                     }
                 }
             }
@@ -186,6 +195,9 @@ fn parse_chapter<A: AsRef<std::path::Path>>(content: &str, in_folder: A) -> Vec<
     for chapter in &mut chapters {
         chapter.parent = None;
     }
+    chapters.first_mut().map(|x| x.previous = None);
+    chapters.last_mut().map(|x| x.next = None);
+
     chapters
 }
 
@@ -194,15 +206,15 @@ mod tests {
     use super::*;
     #[test]
     fn test_parse_book_summary() {
-        let content = r#"- [Intro](./test1/test1.md)
-- [Another](./test/another.md)
-    - [Level2.1](./test2/test2.md)
-    - [Level2.2](./test2/test3.md)
-        - [Level3.1](./test2/test3/test1.md)
-        - [Level3.2](./test2/test3/test2.md)
-- [Final](./final/final.md)
+        let content = r#"- [Intro](test1/test1.md)
+- [Another](test/another.md)
+    - [Level2.1](test2/test2.md)
+    - [Level2.2](test2/test3.md)
+        - [Level3.1](test2/test3/test1.md)
+        - [Level3.2](test2/test3/test2.md)
+- [Final](final/final.md)
 "#;
-        let r = parse_chapter(&content, "/home");
+        let r = parse_chapter(&content, "/home/books", "/html/book");
         assert_eq!(r.len(), 3);
         assert_eq!(r[1].sub_chapters.len(), 2);
         assert_eq!(r[0].next.as_ref().unwrap().name, "Another");

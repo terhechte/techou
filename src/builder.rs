@@ -226,9 +226,8 @@ impl<'a> Builder<'a> {
     pub fn chapter<A: AsRef<Path>>(&self, book: &Book, chapters: &[Chapter], folder: A) -> Result<()> {
         for chapter in chapters {
             let path = folder.as_ref().join(&chapter.document.slug);
-            println!("write chapter to: {:?}", &path);
             match self.template_writer.write_chapter(&self.context, &book, &chapter, &path, &self.config) {
-                Ok(_) => (),
+                Ok(_) => println!("write chapter to: {:?}", &path),
                 Err(e) => println!("Could not write {}: {}", &chapter.name, &e)
             };
             if !chapter.sub_chapters.is_empty() {

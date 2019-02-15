@@ -78,11 +78,10 @@ fn catchable_execute(config: &Config) -> Result<()> {
         &config,
     );
 
-    //builder.posts(&posts, &config.folders.posts_folder_name)?;
-    //builder.pages(&pages, &config.folders.pages_folder_name)?;
+    builder.posts(&posts, &config.folders.posts_folder_name)?;
+    builder.pages(&pages, &config.folders.pages_folder_name)?;
     builder.books(&books, &config.folders.books_folder_name)?;
-    //builder.tags(&by_tag, &config.folders.tags_folder_name)?;
-    return Ok(());
+    builder.tags(&by_tag, &config.folders.tags_folder_name)?;
 
     // Write the indexed pages
     let title_fn = |index| match index {
