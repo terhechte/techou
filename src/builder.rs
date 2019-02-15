@@ -2,6 +2,7 @@ use rayon::prelude::*;
 
 use crate::config::Config;
 use crate::document::Document;
+use crate::book::{Book, Chapter};
 use crate::error::Result;
 use crate::list::*;
 use crate::template::Templates;
@@ -192,6 +193,51 @@ impl<'a> Builder<'a> {
                 Ok(_) => println!("Wrote tag index: {:?}", &path),
                 Err(e) => println!("Could not write index {:?}: {:?}", &path, &e),
             };
+        }
+        Ok(())
+    }
+
+    /// Write out a book as a recursive tree of chapters.
+    /// We basically replicate the book directory structure as HTML
+    pub fn books<A: AsRef<Path>>(&self, books: &[Book], folder: A) -> Result<()> {
+        let folder = self
+            .config
+            .folders
+            .output_folder_path()
+            .join(folder.as_ref());
+        books.par_iter().for_each(|book| {
+            let path = folder.join(&book.folder);
+
+            // for each book, we need to write out all the chapters recursively
+            self.chapter(&book, &book.chapters, &path);
+
+            let path = path.join("index.html");
+            match self
+                .template_writer
+                .write_book(&self.context, &book, &path, &self.config)
+                {
+                    Ok(_) => println!("Wrote '{:?}'", &path),
+                    Err(e) => println!("Could not write book {}: {:?}", &book.identifier, &e),
+                }
+        });
+        Ok(())
+    }
+
+    pub fn chapter<A: AsRef<Path>>(&self, book: &Book, chapters: &[Chapter], folder: A) -> Result<()> {
+        for chapter in chapters {
+            let path = folder.as_ref().join(&chapter.document.slug);
+            println!("write chapter to: {:?}", &path);
+            match self.template_writer.write_chapter(&self.context, &book, &chapter, &path, &self.config) {
+                Ok(_) => (),
+                Err(e) => println!("Could not write {}: {}", &chapter.name, &e)
+            };
+            if !chapter.sub_chapters.is_empty() {
+                // FIXME: This code exists twice, I really need a smarter way around paths and so on
+                let filename = &chapter.file_url.file_name().expect("Proper filename").to_str()
+                    .expect("Proper filename").replace(".md", "");
+                let path = folder.as_ref().join(&filename);
+                self.chapter(&book, &chapter.sub_chapters, &path)?;
+            }
         }
         Ok(())
     }

@@ -2,6 +2,7 @@ use serde::Serialize;
 use serde_derive::Serialize;
 
 use crate::document::Document;
+use crate::book::Book;
 
 #[derive(Serialize, Debug)]
 pub struct Year<'a> {
@@ -44,6 +45,7 @@ impl<'a> From<(u32, Vec<&'a Document>)> for Month<'a> {
 pub struct DocumentContext<'a> {
     pub pages: &'a Vec<Document>,
     pub posts: &'a Vec<Document>,
+    pub books: &'a Vec<Book>,
     pub by_date: &'a Vec<Year<'a>>,
     pub by_tag: &'a Vec<Category<'a>>,
     pub by_keyword: &'a Vec<Category<'a>>,

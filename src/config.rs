@@ -84,10 +84,14 @@ pub struct ConfigFolders {
     pub public_folder: String,
     pub public_copy_folders: Vec<String>,
 
+    /// Name of book folders including the summary toml file
+    pub books: Vec<String>,
+
     /// Folder names in the generated structure
     pub posts_folder_name: String,
     pub tags_folder_name: String,
     pub pages_folder_name: String,
+    pub books_folder_name: String,
 }
 
 impl ConfigFolders {
@@ -113,6 +117,10 @@ impl ConfigFolders {
         self.output_folder_path().join(&self.tags_folder_name)
     }
 
+    pub fn books_folder_path(&self) -> PathBuf {
+        self.output_folder_path().join(&self.books_folder_name)
+    }
+
     pub fn public_folder_path(&self) -> PathBuf {
         self.root.join(&self.public_folder)
     }
@@ -130,8 +138,11 @@ impl Default for ConfigFolders {
             public_folder: "public".to_string(),
             public_copy_folders: vec!["css".to_string(), "img".to_string()],
 
+            books: Vec::new(),
+
             posts_folder_name: "posts".to_string(),
             pages_folder_name: "pages".to_string(),
+            books_folder_name: "books".to_string(),
             tags_folder_name: "tags".to_string(),
         }
     }
@@ -143,6 +154,8 @@ pub struct ConfigTemplates {
     pub post_template: String,
     pub page_template: String,
     pub list_template: String,
+    pub book_template: String,
+    pub chapter_template: String,
 }
 
 impl Default for ConfigTemplates {
@@ -151,6 +164,8 @@ impl Default for ConfigTemplates {
             post_template: "post.html".to_string(),
             page_template: "page.html".to_string(),
             list_template: "list.html".to_string(),
+            book_template: "book.html".to_string(),
+            chapter_template: "chapter.html".to_string(),
         }
     }
 }

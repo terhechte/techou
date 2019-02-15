@@ -1,0 +1,18 @@
+{{ content.chapter.name }}<br/>
+
+{% for chapter in content.chapter.sub_chapters %}
+	{{ chapter.name }} :: {{ chapter.document.slug }}<br/>
+
+	{% if chapter.next %}
+	next: {{ chapter.next.slug }}<br/>
+	{% endif %}
+
+	{% if chapter.previous %}
+	previous: {{ chapter.previous.slug }}<br/>
+	{% endif %}
+
+	{% if chapter.parent %}
+	parent: {{ chapter.parent.slug }}<br/>
+	{% endif %}
+
+{% endfor %}

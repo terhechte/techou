@@ -1,3 +1,5 @@
+use rayon::prelude::*;
+
 use crate::builder;
 use crate::config::Config;
 use crate::document::documents_in_folder;
@@ -7,6 +9,7 @@ use crate::feeds;
 use crate::io_utils::*;
 use crate::list::*;
 use crate::template::Templates;
+use crate::book::Book;
 
 pub fn execute(ignore_errors: bool, config: &Config) -> Result<()> {
     match catchable_execute(&config) {
@@ -45,6 +48,15 @@ fn catchable_execute(config: &Config) -> Result<()> {
     let mut template_writer = Templates::new(&config.folders.public_folder_path()).unwrap();
 
     let pages = documents_in_folder(&config.folders.pages_folder_path(), &config)?;
+    let books: Vec<Book> = config.folders.books.par_iter().filter_map(|filename| {
+        match Book::new(&filename, &config) {
+            Ok(book) => Some(book),
+            Err(e) =>  {
+                println!("Error generating book {}: {}", &filename, &e);
+                None
+            }
+        }
+    }).collect();
     let by_year = posts_by_date(&posts);
     let by_tag = posts_by_array(&posts, |p| &p.info.tags);
     let by_keyword = posts_by_array(&posts, |p| &p.info.keywords);
@@ -52,6 +64,7 @@ fn catchable_execute(config: &Config) -> Result<()> {
     let context = DocumentContext {
             posts: &posts,
             pages: &pages,
+            books: &books,
             by_date: &by_year,
             by_tag: &by_tag,
             by_keyword: &by_keyword,
@@ -65,9 +78,11 @@ fn catchable_execute(config: &Config) -> Result<()> {
         &config,
     );
 
-    builder.posts(&posts, &config.folders.posts_folder_name)?;
-    builder.pages(&pages, &config.folders.pages_folder_name)?;
-    builder.tags(&by_tag, &config.folders.tags_folder_name)?;
+    //builder.posts(&posts, &config.folders.posts_folder_name)?;
+    //builder.pages(&pages, &config.folders.pages_folder_name)?;
+    builder.books(&books, &config.folders.books_folder_name)?;
+    //builder.tags(&by_tag, &config.folders.tags_folder_name)?;
+    return Ok(());
 
     // Write the indexed pages
     let title_fn = |index| match index {

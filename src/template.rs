@@ -4,6 +4,7 @@ use tera::Tera;
 
 use crate::config::Config;
 use crate::document::Document;
+use crate::book::{Book, Chapter};
 use crate::error::*;
 use crate::io_utils::spit;
 use crate::list::*;
@@ -96,6 +97,46 @@ impl Templates {
             content: page,
         };
         self.write_item(&config.templates.page_template, &item, &path, config)
+    }
+
+    pub fn write_book<'a, A: AsRef<Path>>(
+        &self,
+        context: &DocumentContext<'a>,
+        book: &Book,
+        path: A,
+        config: &Config,
+    ) -> Result<()> {
+        let item = TemplateContext {
+            config,
+            context,
+            content: book,
+        };
+        self.write_item(&config.templates.book_template, &item, &path, config)
+    }
+
+    pub fn write_chapter<'a, A: AsRef<Path>>(
+        &self,
+        context: &DocumentContext<'a>,
+        book: &Book,
+        chapter: &Chapter,
+        path: A,
+        config: &Config,
+    ) -> Result<()> {
+        #[derive(Serialize)]
+        struct ChapterContext<'a> {
+            book: &'a Book,
+            chapter: &'a Chapter
+        }
+        let content = ChapterContext {
+            book,
+            chapter
+        };
+        let item = TemplateContext {
+            config,
+            context,
+            content: &content,
+        };
+        self.write_item(&config.templates.chapter_template, &item, &path, config)
     }
 
     pub fn write_list<'a, A: AsRef<Path>, D: AsRef<Document>>(
