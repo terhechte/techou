@@ -1,7 +1,7 @@
 {{ content.chapter.name }}<br/>
 
 {% for chapter in content.chapter.sub_chapters %}
-	{{ chapter.name }} :: {{ chapter.document.slug }}<br/>
+	{{ chapter.name }} :: {{ chapter.slug }}<br/>
 
 	{% if chapter.next %}
 	next: {{ chapter.next.slug }}<br/>

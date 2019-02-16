@@ -80,6 +80,7 @@ pub struct ConfigFolders {
     /// Folders on Disk
     pub posts_folder: String,
     pub pages_folder: String,
+    pub books_folder: String,
     pub output_folder: String,
     pub public_folder: String,
     pub public_copy_folders: Vec<String>,
@@ -101,6 +102,9 @@ impl ConfigFolders {
     pub fn pages_folder_path(&self) -> PathBuf {
         self.root.join(&self.pages_folder)
     }
+    pub fn books_folder_path(&self) -> PathBuf {
+        self.root.join(&self.books_folder)
+    }
     pub fn output_folder_path(&self) -> PathBuf {
         self.root.join(&self.output_folder)
     }
@@ -113,11 +117,11 @@ impl ConfigFolders {
         self.output_folder_path().join(&self.pages_folder_name)
     }
 
-    pub fn tags_folder_path(&self) -> PathBuf {
+    pub fn output_tags_folder_path(&self) -> PathBuf {
         self.output_folder_path().join(&self.tags_folder_name)
     }
 
-    pub fn books_folder_path(&self) -> PathBuf {
+    pub fn output_books_folder_path(&self) -> PathBuf {
         self.output_folder_path().join(&self.books_folder_name)
     }
 
@@ -134,6 +138,7 @@ impl Default for ConfigFolders {
             root,
             posts_folder: "posts".to_string(),
             pages_folder: "pages".to_string(),
+            books_folder: "books".to_string(),
             output_folder: "html".to_string(),
             public_folder: "public".to_string(),
             public_copy_folders: vec!["css".to_string(), "img".to_string()],

@@ -41,13 +41,17 @@ impl From<NaiveDateTime> for DateInfo {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FrontMatter {
     pub title: String,
+    #[serde(default)]
     pub tags: Vec<String>,
     #[serde(default)]
     pub keywords: Vec<String>,
+    #[serde(default)]
     pub created: String,
+    #[serde(default)]
     pub description: String,
     #[serde(default)]
     pub description_html: String,
+    #[serde(default)]
     pub published: bool,
 
     // If this is non-empty, use it instead of the generated one
@@ -105,6 +109,10 @@ pub fn parse_front_matter<'a, A: AsRef<Path>>(
         meta,
     } = parsed_front_matter;
 
+    if front_matter.created.is_empty() {
+        front_matter.created = default_date_time(&config);
+    }
+
     let (date_string, timestamp, date) = detect_date_time(&front_matter.created, &config)?;
 
     front_matter.meta = meta;
@@ -152,6 +160,13 @@ fn detect_front_matter<'a, A: AsRef<Path>>(
     };
     let (f, a) = input.split_at(index);
     Ok((f, &a[DEFAULT_FRONT_MATTER_SEP.len()..]))
+}
+
+pub fn default_date_time(config: &Config) -> String {
+    use chrono::{DateTime, Local};
+    let local: DateTime<Local> = Local::now();
+    let formatted = local.format(&config.dates.date_time_format).to_string();
+    formatted
 }
 
 pub fn detect_date_time(input: &str, config: &Config) -> Result<(String, i64, NaiveDateTime)> {

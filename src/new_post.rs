@@ -1,19 +1,16 @@
-use chrono::{DateTime, Local};
-
 use crate::config::Config;
 use crate::front_matter;
 use crate::io_utils;
 use crate::utils;
 
 pub fn interactive(config: &Config) {
-    let local: DateTime<Local> = Local::now();
-    let formatted = local.format(&config.dates.date_time_format).to_string();
+    let created_time = front_matter::default_date_time(&config);
     let flags = &[
         ("title", "The title of this post", None),
         (
             "date",
             "The date/time for this post",
-            Some(formatted.as_str()),
+            Some(created_time.as_str()),
         ),
         ("filename", "The filename for this post", Some("filename")),
     ];

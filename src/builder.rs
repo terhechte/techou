@@ -209,7 +209,7 @@ impl<'a> Builder<'a> {
             let path = folder.join(&book.folder);
 
             // for each book, we need to write out all the chapters recursively
-            self.chapter(&book, &book.chapters, &path);
+            self.chapter(&book, &book.chapters);
 
             let path = path.join("index.html");
             match self
@@ -223,19 +223,15 @@ impl<'a> Builder<'a> {
         Ok(())
     }
 
-    pub fn chapter<A: AsRef<Path>>(&self, book: &Book, chapters: &[Chapter], folder: A) -> Result<()> {
+    pub fn chapter(&self, book: &Book, chapters: &[Chapter]) -> Result<()> {
         for chapter in chapters {
-            let path = folder.as_ref().join(&chapter.document.slug);
-            match self.template_writer.write_chapter(&self.context, &book, &chapter, &path, &self.config) {
-                Ok(_) => println!("write chapter to: {:?}", &path),
+            let output_path = std::path::PathBuf::from(&self.config.folders.output_folder).join(&chapter.slug);
+            match self.template_writer.write_chapter(&self.context, &book, &chapter, &output_path, &self.config) {
+                Ok(_) => println!("write chapter to: {:?}", &chapter.slug),
                 Err(e) => println!("Could not write {}: {}", &chapter.name, &e)
             };
             if !chapter.sub_chapters.is_empty() {
-                // FIXME: This code exists twice, I really need a smarter way around paths and so on
-                let filename = &chapter.file_url.file_name().expect("Proper filename").to_str()
-                    .expect("Proper filename").replace(".md", "");
-                let path = folder.as_ref().join(&filename);
-                self.chapter(&book, &chapter.sub_chapters, &path)?;
+                self.chapter(&book, &chapter.sub_chapters)?;
             }
         }
         Ok(())

@@ -32,6 +32,24 @@ pub fn spit<A: AsRef<Path>>(path: A, contents: &str) -> Result<()> {
     file.write_all(contents.as_bytes()).ctx(path)
 }
 
+/// Generate a folder structure based on the contents of a book summary
+pub fn generate_book_folders(config: &crate::config::Config, chapters: &Vec<crate::book::ChapterInfo>, to_folder: &PathBuf) -> Result<()> {
+    for chapter in chapters {
+        let date = crate::front_matter::default_date_time(&config);
+        let matter = crate::front_matter::default_front_matter(&chapter.name, &date);
+        let path = to_folder.join(&chapter.file_url);
+        if !path.exists() {
+            spit(&path, &format!("{}\n---\n\n# {}", &matter, &chapter.name))?;
+        } else {
+            println!("Cowardly refusing to overwrite file `{:?}`", &path);
+        }
+        if !chapter.sub_chapters.is_empty() {
+            generate_book_folders(&config, &chapter.sub_chapters, to_folder)?;
+        }
+    }
+    Ok(())
+}
+
 pub fn contents_of_directory<A: AsRef<Path>>(
     directory: A,
     file_type: &str,

@@ -1,3 +1,3 @@
 [Folders]
 books = ["plom/summary.md", "yon/summary.md"]
-booksFolderName = ""
+booksFolder = "boks"
