@@ -38,7 +38,6 @@ impl EventHandler for HighlightEventHandler {
                 return false;
             }
             Event::End(Tag::CodeBlock(_)) => {
-                // try to find a syntax
                 let syntax = match self.syntax_set.find_syntax_by_name(&self.language) {
                     Some(s) => s,
                     None => match self.syntax_set.find_syntax_by_extension(&self.language) {

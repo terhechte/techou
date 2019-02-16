@@ -16,8 +16,9 @@ this isss the actual article contents yeah.
 this is the actual article contents yeah.
 xxxx
 
-``` R
-x <- 5
-y <- 6
-x + y
+``` Swift
+let a = "test"
+if let bbbklaus = method()?.jochen().franz {
+  print(a)
+}
 ```
