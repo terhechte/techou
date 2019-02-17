@@ -21,13 +21,14 @@ pub struct DocumentLink {
     pub slug: String
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 pub struct Document {
     pub identifier: String,
     pub filename: String,
     pub info: FrontMatter,
     pub slug: String,
     pub content: String,
+    pub raw_content: String,
     pub sections: Vec<(u32, String)>,
     pub similar_documents: Vec<(u32, DocumentLink)>,
     pub previous_document: Option<DocumentLink>,
@@ -61,6 +62,7 @@ impl Document {
             info,
             slug,
             content,
+            raw_content: contents.to_string(),
             sections,
             similar_documents: Vec::new(),
             next_document: None,
@@ -80,7 +82,7 @@ impl Document {
     }
 }
 
-pub fn documents_in_folder<A: AsRef<Path>>(folder: A, config: &Config) -> Result<Vec<Document>> {
+pub fn documents_in_folder<A: AsRef<Path>>(folder: A, config: &Config, cache: &crate::build_cache::BuildCache) -> Result<Vec<Document>> {
     use crate::io_utils::{contents_of_directory, slurp};
     let files = contents_of_directory(folder.as_ref(), "md")?;
     let posts: Vec<Document> = files
@@ -93,6 +95,13 @@ pub fn documents_in_folder<A: AsRef<Path>>(folder: A, config: &Config) -> Result
                     return None;
                 }
             };
+
+            let clone = cache.clone();
+            let cache_key = &path.to_str().unwrap();
+            if let Some(existing) = clone.get_item(cache_key, &contents) {
+                return Some(existing)
+            }
+
             let post = match Document::new(&contents, &path, &config) {
                 Ok(a) => a,
                 Err(e) => {
@@ -100,6 +109,7 @@ pub fn documents_in_folder<A: AsRef<Path>>(folder: A, config: &Config) -> Result
                     return None;
                 }
             };
+            cache.set_item(&cache_key, &post);
             Some(post)
         })
         .collect();

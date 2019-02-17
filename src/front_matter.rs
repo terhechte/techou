@@ -15,7 +15,7 @@ fn default_nativetime() -> NaiveDateTime {
     NaiveDate::from_ymd(2016, 7, 8).and_hms(9, 10, 11)
 }
 
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct DateInfo {
     pub year: i32,
     pub month: u32,
@@ -38,7 +38,7 @@ impl From<NaiveDateTime> for DateInfo {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FrontMatter {
     pub title: String,
     #[serde(default)]

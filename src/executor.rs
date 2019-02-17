@@ -10,9 +10,10 @@ use crate::io_utils::*;
 use crate::list::*;
 use crate::template::Templates;
 use crate::book::Book;
+use crate::build_cache::BuildCache;
 
-pub fn execute(ignore_errors: bool, config: &Config) -> Result<()> {
-    match catchable_execute(&config) {
+pub fn execute(ignore_errors: bool, config: &Config, cache: &BuildCache) -> Result<()> {
+    match catchable_execute(&config, &cache) {
         Ok(_) => Ok(()),
         Err(e) => if ignore_errors {
             println!("Error: {}", &e);
@@ -23,13 +24,14 @@ pub fn execute(ignore_errors: bool, config: &Config) -> Result<()> {
     }
 }
 
-fn catchable_execute(config: &Config) -> Result<()> {
+fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
+    let begin = std::time::Instant::now();
     // Clean the old output folder, if it still exists.
     // We don't want to remove the folder, so that static servers still work
     clear_directory(&config.folders.output_folder_path())?;
 
     println!("Root folder: {:?}", &config.folders.root);
-    let mut posts = documents_in_folder(&config.folders.posts_folder_path(), &config)?;
+    let mut posts = documents_in_folder(&config.folders.posts_folder_path(), &config, &cache)?;
     posts.sort_by(|a1, a2| {
         a2.info
             .created_timestamp
@@ -47,7 +49,7 @@ fn catchable_execute(config: &Config) -> Result<()> {
 
     let mut template_writer = Templates::new(&config.folders.public_folder_path()).unwrap();
 
-    let pages = documents_in_folder(&config.folders.pages_folder_path(), &config)?;
+    let pages = documents_in_folder(&config.folders.pages_folder_path(), &config, &cache)?;
     let books: Vec<Book> = config.folders.books.par_iter().filter_map(|filename| {
         match Book::new(&filename, &config) {
             Ok(book) => Some(book),
@@ -106,6 +108,9 @@ fn catchable_execute(config: &Config) -> Result<()> {
         &config.folders.public_folder_path(),
         &config.folders.output_folder_path(),
     )?;
+
+    let end = std::time::Instant::now();
+    println!("Execution time: {:?}", end - begin);
 
     Ok(())
 }

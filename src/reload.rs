@@ -14,15 +14,16 @@ pub fn reload<ActionFn>(
     action: ActionFn,
 ) -> mpsc::Receiver<bool>
 where
-    ActionFn: Fn(&path::Path, &Config) + std::marker::Send + 'static,
+    ActionFn: Fn(&path::Path, &Config) + std::marker::Send + std::marker::Sync + 'static,
 {
     let (reload_sender, reload_receiver) = mpsc::channel();
-    //let inner_paths = paths.clone();
     let inner_config = config.clone();
+    let cloned_sender = reload_sender.clone();
     std::thread::spawn(move || {
-        trigger_on_change(paths, |path| {
+        let cloned_sender = cloned_sender.clone();
+        trigger_on_change(paths, move |path| {
             action(path, &inner_config);
-            reload_sender.send(true);
+            cloned_sender.send(true);
             println!("Done");
         });
     });
@@ -31,6 +32,7 @@ where
 
 fn trigger_on_change<F>(folders: Vec<path::PathBuf>, closure: F)
 where
+    F: std::marker::Send + 'static,
     F: Fn(&path::Path),
 {
     // Create a channel to receive the events.
@@ -56,11 +58,37 @@ where
 
     println!("Listening for changes...");
 
+    let (delay_tx, delay_rx): (mpsc::Sender<path::PathBuf>, mpsc::Receiver<path::PathBuf>) = mpsc::channel();
+    let delayed_control = std::thread::spawn(move || {
+        while let Ok(msg) = delay_rx.recv() {
+            closure(&msg);
+        }
+    });
+
+    let mut last_receiver: Option<mpsc::Sender<bool>> = None;
     for event in rx.iter() {
         println!("Received filesystem event: {:?}", event);
         match event {
             Create(path) | Write(path) | Remove(path) | Rename(_, path) => {
-                closure(&path);
+                if let Some(existing) = last_receiver {
+                    existing.send(true);
+                    last_receiver = None;
+                }
+                let (tx, rx) = mpsc::channel();
+                last_receiver = Some(tx);
+                let delay_clone = delay_tx.clone();
+                let inner_path = path.clone();
+                std::thread::spawn(move || {
+                    let delay = std::time::Duration::from_millis(500);
+                    std::thread::sleep(delay);
+
+                    // If something was send, leave early
+                    if let Ok(true) = rx.try_recv() {
+                        return;
+                    }
+                    // Otherwise, execute the closure
+                    delay_clone.send(inner_path);
+                });
             }
             _ => {}
         }

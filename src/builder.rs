@@ -48,7 +48,7 @@ impl<'a> Builder<'a> {
                 .template_writer
                 .write_post(&self.context, &post, &path, &self.config)
             {
-                Ok(_) => println!("Wrote '{:?}'", &path),
+                Ok(_) => () /*println!("Wrote '{:?}'", &path)*/,
                 Err(e) => println!("Could not write article {}: {:?}", &post.filename, &e),
             }
         });
@@ -67,7 +67,7 @@ impl<'a> Builder<'a> {
                 .template_writer
                 .write_page(&self.context, &page, &path, &self.config)
             {
-                Ok(_) => println!("Wrote '{:?}'", &path),
+                Ok(_) => () /*println!("Wrote '{:?}'", &path)*/,
                 Err(e) => println!("Could not write article {}: {:?}", &page.filename, &e),
             }
         });
@@ -96,7 +96,7 @@ impl<'a> Builder<'a> {
             &path,
             &self.config,
         ) {
-            Ok(_) => println!("Wrote index: {:?}", &path),
+            Ok(_) => () /*println!("Wrote index: {:?}", &path)*/,
             Err(e) => println!("Could not write index {:?}: {:?}", &path, &e),
         };
         Ok(())
@@ -153,7 +153,7 @@ impl<'a> Builder<'a> {
                 &path,
                 &self.config,
             ) {
-                Ok(_) => println!("Wrote index: {:?}", &path),
+                Ok(_) => () /*println!("Wrote index: {:?}", &path)*/,
                 Err(e) => println!("Could not write index {:?}: {:?}", &path, &e),
             }
             state.1 = Some(Page {
@@ -190,7 +190,7 @@ impl<'a> Builder<'a> {
                 &path,
                 &self.config,
             ) {
-                Ok(_) => println!("Wrote tag index: {:?}", &path),
+                Ok(_) => () /*println!("Wrote tag index: {:?}", &path)*/ ,
                 Err(e) => println!("Could not write index {:?}: {:?}", &path, &e),
             };
         }
@@ -216,7 +216,7 @@ impl<'a> Builder<'a> {
                 .template_writer
                 .write_book(&self.context, &book, &path, &self.config)
                 {
-                    Ok(_) => println!("Wrote '{:?}'", &path),
+                    Ok(_) => () /*println!("Wrote '{:?}'", &path)*/,
                     Err(e) => println!("Could not write book {}: {:?}", &book.identifier, &e),
                 }
         });
@@ -227,7 +227,7 @@ impl<'a> Builder<'a> {
         for chapter in chapters {
             let output_path = std::path::PathBuf::from(&self.config.folders.output_folder).join(&chapter.slug);
             match self.template_writer.write_chapter(&self.context, &book, &chapter, &output_path, &self.config) {
-                Ok(_) => println!("write chapter to: {:?}", &chapter.slug),
+                Ok(_) => () /*println!("write chapter to: {:?}", &chapter.slug)*/,
                 Err(e) => println!("Could not write {}: {}", &chapter.name, &e)
             };
             if !chapter.sub_chapters.is_empty() {

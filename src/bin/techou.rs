@@ -118,8 +118,10 @@ fn main() {
         techou::new_post::interactive(&config);
     }
 
-    let load_fn = |_path: &path::Path, config: &techou::config::Config| {
-        match techou::executor::execute(false, &config) {
+    let cache = techou::build_cache::BuildCache::new();
+    let load_fn = move |_path: &path::Path, config: &techou::config::Config| {
+        let cache_clone = cache.clone();
+        match techou::executor::execute(false, &config, &cache_clone) {
             Err(e) => println!("Error: {:?}", &e),
             _ => (),
         };
