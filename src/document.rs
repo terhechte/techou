@@ -1,5 +1,5 @@
 use chrono::Datelike;
-use pulldown_cmark::{html, Event, Parser};
+use pulldown_cmark::{html, Event, Parser, Options};
 use rayon::prelude::*;
 use serde_derive::Serialize;
 
@@ -128,7 +128,11 @@ fn slug_from_frontmatter(front_matter: &FrontMatter) -> String {
 
 // Transform the AST of the markdown to support custom markdown constructs
 fn markdown_to_html(markdown: &str) -> ParseResult {
-    let parser = Parser::new(markdown);
+    let mut opts = Options::empty();
+    opts.insert(Options::ENABLE_TABLES);
+    opts.insert(Options::ENABLE_FOOTNOTES);
+
+    let parser = Parser::new_ext(markdown, opts);
     let mut events: Vec<Event> = Vec::new();
     let mut result = ParseResult {
         content: String::new(),

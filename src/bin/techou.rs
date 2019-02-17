@@ -3,6 +3,7 @@ use clap::{App, Arg, SubCommand};
 extern crate techou;
 
 use std::path;
+use std::path::PathBuf;
 
 fn main() {
     let matches = App::new("techou")
@@ -134,7 +135,22 @@ fn main() {
         let mut paths = vec![
             config.folders.public_folder_path(),
             config.folders.posts_folder_path(),
+            config.folders.pages_folder_path(),
         ];
+
+        if !config.folders.books.is_empty() {
+            let book_root = PathBuf::from(&config.folders.books_folder);
+            config.folders.books.iter().for_each(|book| {
+                if let Some(folder) = PathBuf::from(&book).parent() {
+                    if config.folders.books_folder.is_empty() {
+                        paths.push(folder.to_path_buf());
+                    } else {
+                        paths.push(book_root.join(&folder));
+                    }
+                }
+            })
+        }
+
         if !project_file.is_empty() {
             paths.push(path::PathBuf::from(&project_file));
         }
