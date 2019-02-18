@@ -1,5 +1,6 @@
-use syntect::html::{tokens_to_classed_html, ClassStyle};
-use syntect::parsing::{ParseState, SyntaxSet};
+use syntect::html::ClassedHTMLGenerator;
+use syntect::util::LinesWithEndings;
+use syntect::parsing::SyntaxSet;
 
 use super::*;
 
@@ -45,24 +46,13 @@ impl EventHandler for HighlightEventHandler {
                         None => self.syntax_set.find_syntax_plain_text(),
                     },
                 };
-                let mut ps = ParseState::new(&syntax);
-                let mut html_str = String::new();
-                for line in self.current_code.lines() {
-                    let parsed_line = ps.parse_line(line, &self.syntax_set);
-                    // If there was nothing to parse, we just add the line as is
-                    match parsed_line.len() {
-                        0 => html_str.push_str(&line),
-                        _ => html_str.push_str(
-                            &tokens_to_classed_html(
-                                line,
-                                parsed_line.as_slice(),
-                                ClassStyle::Spaced,
-                            )
-                            .as_str(),
-                        ),
-                    }
-                    html_str.push('\n');
+
+                let mut html_generator = ClassedHTMLGenerator::new(&syntax, &self.syntax_set);
+                let mut lines = LinesWithEndings::from(&self.current_code);
+                for line in lines {
+                    html_generator.parse_html_for_line(&line);
                 }
+                let html_str = html_generator.finalize();
 
                 events.push(Event::Html(Cow::Owned(format!(
                     "<pre class=\"{}\"><code>{}</code></pre>",
