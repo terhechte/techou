@@ -1,5 +1,6 @@
 use tera;
 use toml;
+use serde_json;
 
 use std::io;
 use std::result;
@@ -27,6 +28,12 @@ pub enum TechouError {
 
     #[error(display = "other: {:?}", issue)]
     Other { issue: String },
+
+    #[error(display = "json encoding: {}: {}", context, source)]
+    JSON {
+        source: serde_json::error::Error,
+        context: String,
+    },
 }
 
 pub type Result<T> = result::Result<T, TechouError>;
@@ -56,6 +63,15 @@ impl<T> ResultContext<T> for result::Result<T, tera::Error> {
 impl<T> ResultContext<T> for result::Result<T, toml::de::Error> {
     fn ctx<A: std::fmt::Debug>(self, ctx: A) -> Result<T> {
         self.map_err(|e| TechouError::TOML {
+            source: e,
+            context: format!("{:?}", ctx),
+        })
+    }
+}
+
+impl<T> ResultContext<T> for result::Result<T, serde_json::error::Error> {
+    fn ctx<A: std::fmt::Debug>(self, ctx: A) -> Result<T> {
+        self.map_err(|e| TechouError::JSON {
             source: e,
             context: format!("{:?}", ctx),
         })

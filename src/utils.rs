@@ -1,3 +1,7 @@
+use regex::Regex;
+use lazy_static::*;
+use std::borrow::Cow;
+
 pub fn hash_string(input: &str, length: usize) -> String {
     use sha2::Digest;
     use sha2::Sha256;
@@ -17,4 +21,11 @@ pub fn slugify(input: &str) -> String {
         .split_whitespace()
         .collect::<Vec<&str>>()
         .join("-")
+}
+
+pub fn collapse_whitespace<'a>(text: &'a str) -> Cow<'a, str> {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"\s\s+").unwrap();
+    }
+    RE.replace_all(text, " ")
 }

@@ -11,6 +11,7 @@ use crate::config::Config;
 #[derive(Serialize, Debug)]
 pub struct Book {
     pub identifier: String,
+    pub slug: String,
     pub folder: String,
     pub info: FrontMatter,
     pub chapters: Vec<Chapter>
@@ -31,8 +32,15 @@ impl Book {
                 None
             }
         }).collect();
+        // A book needs chapters
+        if chapters.is_empty() {
+            return Err(crate::error::TechouError::Other {
+                issue: format!("Empty book {} will not be included", &info.title)
+            });
+        }
         Ok(Book {
             identifier: format!("{:?}", file.as_ref()),
+            slug: chapters[0].slug.clone(),
             folder: file.as_ref().parent().expect("Proper book path").to_str().expect("Proper book path").to_string(),
             info,
             chapters

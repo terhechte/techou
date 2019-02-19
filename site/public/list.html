@@ -1,4 +1,24 @@
 <title>{{ content.title }}</title>
+
+{% if config.Search.enable %}
+<form id="searchbar-outer">
+	<button id="search-toggle"><span data-feather="search"></span>  Search</button>
+</form>
+{% endif %}
+
+<br/><br/>
+
+{% if config.Search.enable %}
+<div id="search-wrapper" class="hidden">
+	<input id="searchbar" name="searchbar" type="search" placeholder="Search" aria-label="Search">
+	<div id="searchresults-outer">
+		<div id="searchresults-header"></div>
+		<ul id="searchresults">
+		</ul>
+	</div>
+</div>
+{% endif %}
+
 <ul>
 {% for article in content.posts -%}
   <li><a href="{{ article.slug }}">{{ article.info.title }}</a>
@@ -28,3 +48,13 @@
 	<h3>previous:{{ content.pagination.previous.index }}, {{ content.pagination.previous.title }}</h3>
 	{% endif %}
 </div>
+
+
+
+{% if config.Search.enable %}
+<script src="/{{ config.Search.searchIndexFile }}" type="text/javascript" charset="utf-8"></script>
+<script src="/js/elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+<script src="/js/mark.min.js" type="text/javascript" charset="utf-8"></script>
+<script src="/js/searcher.js" type="text/javascript" charset="utf-8"></script>
+{% endif %}
+

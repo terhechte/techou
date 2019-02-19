@@ -1,3 +1,4 @@
 [Folders]
 books = ["plom/summary.md", "yon/summary.md"]
 booksFolder = "boks"
+publicCopyFolders = ["js"]

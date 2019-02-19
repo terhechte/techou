@@ -18,3 +18,4 @@ pub mod server;
 pub mod utils;
 pub mod book;
 pub mod build_cache;
+pub mod search;

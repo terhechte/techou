@@ -11,6 +11,7 @@ use crate::list::*;
 use crate::template::Templates;
 use crate::book::Book;
 use crate::build_cache::BuildCache;
+use crate::search::Searcher;
 
 pub fn execute(ignore_errors: bool, config: &Config, cache: &BuildCache) -> Result<()> {
     match catchable_execute(&config, &cache) {
@@ -30,6 +31,9 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
     // We don't want to remove the folder, so that static servers still work
     clear_directory(&config.folders.output_folder_path())?;
 
+    // create a search engine
+    let mut searcher = Searcher::new(&config);
+
     println!("Root folder: {:?}", &config.folders.root);
     let mut posts = documents_in_folder(&config.folders.posts_folder_path(), &config, &cache)?;
     posts.sort_by(|a1, a2| {
@@ -41,6 +45,12 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
 
     make_document_siblings(&mut posts);
 
+    if config.search.enable {
+        for document in &posts {
+            searcher.index_document(document);
+        }
+    }
+
     // if we have more than 5 posts, start generating similarity
     if posts.len() >= 5 {
         // We want two similarity items for each post
@@ -50,6 +60,13 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
     let mut template_writer = Templates::new(&config.folders.public_folder_path()).unwrap();
 
     let pages = documents_in_folder(&config.folders.pages_folder_path(), &config, &cache)?;
+
+    if config.search.enable {
+        for document in &pages {
+            searcher.index_document(document);
+        }
+    }
+
     let books: Vec<Book> = config.folders.books.par_iter().filter_map(|filename| {
         match Book::new(&filename, &config) {
             Ok(book) => Some(book),
@@ -62,6 +79,12 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
     let by_year = posts_by_date(&posts);
     let by_tag = posts_by_array(&posts, |p| &p.info.tags);
     let by_keyword = posts_by_array(&posts, |p| &p.info.keywords);
+
+    if config.search.enable {
+        for book in &books {
+            searcher.index_book(book);
+        }
+    }
 
     let context = DocumentContext {
             posts: &posts,
@@ -108,6 +131,13 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
         &config.folders.public_folder_path(),
         &config.folders.output_folder_path(),
     )?;
+
+    // Write the search index
+    if config.search.enable {
+        let search_contents = searcher.finalize()?;
+        let search_index_output_path = config.folders.output_folder_path().join(&config.search.search_index_file);
+        spit(search_index_output_path, &search_contents);
+    }
 
     let end = std::time::Instant::now();
     println!("Execution time: {:?}", end - begin);
