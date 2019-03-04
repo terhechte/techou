@@ -53,6 +53,8 @@ impl<'a> Searcher<'a> {
 
     /// Index one document
     pub fn index_document(&mut self, document: &Document) -> Result<()> {
+        // Don't index documents that opt out of indexing
+        if !document.info.indexed { return Ok(()) }
         self.render_item(&document.info.title,
                     &document.slug,
                     &document.info.description_html,
@@ -61,10 +63,15 @@ impl<'a> Searcher<'a> {
 
     /// Index all chapters of a book and the book itself
     pub fn index_book(&mut self, book: &Book) -> Result<()> {
+        // Don't index documents that opt out of indexing
+        if !book.info.indexed { return Ok(()) }
+
         if !&book.info.description.is_empty() {
             self.render_item(&book.info.title, &book.slug, &book.info.description_html, "");
         }
         for chapter in &book.chapters {
+            // Don't index documents that opt out of indexing
+            if !chapter.document.info.indexed { continue }
             self.render_item(&chapter.document.info.title,
                              &chapter.document.slug,
                              &chapter.document.info.description_html,

@@ -30,6 +30,17 @@ fn make_url_for(urls: std::collections::BTreeMap<String, String>) -> tera::Globa
     })
 }
 
+fn recusive_chapter_urls(into_collection: &mut std::collections::BTreeMap<String, String>, chapter: &Chapter, config: &Config) {
+    into_collection.insert(chapter.document.identifier.clone(), format!("/{}", chapter.slug));
+    for sub_chapter in chapter.sub_chapters.iter() {
+        into_collection.insert(sub_chapter.document.identifier.clone(),
+                               format!("/{}", sub_chapter.slug));
+        if !sub_chapter.sub_chapters.is_empty() {
+            recusive_chapter_urls(into_collection, &sub_chapter, &config);
+        }
+    }
+}
+
 pub struct Templates {
     tera: Tera,
 }
@@ -67,6 +78,19 @@ impl Templates {
         let tag_urls: std::collections::BTreeMap<String, String> = context.by_tag.iter()
             .map(|t| (t.name.to_string(), format!("/{}/{}", config.folders.tags_folder_name, &t.name))).collect();
         self.tera.register_function("url_tag", make_url_for(tag_urls));
+        // FIXME: Have to iterate over all books and all chapters and find the identifiers
+        // and then insert them into two new functions
+        // url_book and url_chapter
+        let mut book_urls: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
+        let mut chapter_urls: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
+        for book in context.books.iter() {
+            book_urls.insert(book.identifier.clone(), format!("/{}", book.slug));
+            for chapter in book.chapters.iter() {
+                recusive_chapter_urls(&mut chapter_urls, &chapter, &config);
+            }
+        }
+        self.tera.register_function("url_chapter", make_url_for(chapter_urls));
+        self.tera.register_function("url_book", make_url_for(book_urls));
     }
 
     pub fn write_post<'a, A: AsRef<Path>>(

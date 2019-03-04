@@ -70,6 +70,17 @@ where
         println!("Received filesystem event: {:?}", event);
         match event {
             Create(path) | Write(path) | Remove(path) | Rename(_, path) => {
+                // ignore changes to hidden files. this includes
+                // emacs or vim temporary buffers and more
+                // FIXME: Use and_then
+                if let Some(fname_os) = path.as_path().file_name() {
+                    if let Some(fname) = fname_os.to_str() {
+                        if fname.get(0..1) == Some(".") {
+                            println!("Ignoring hidden file change: {:?}", &path);
+                            continue;
+                        }
+                    }
+                }
                 if let Some(existing) = last_receiver {
                     existing.send(true);
                     last_receiver = None;

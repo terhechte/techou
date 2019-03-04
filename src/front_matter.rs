@@ -59,7 +59,7 @@ pub struct FrontMatter {
     pub slug: Option<String>,
 
     // The Meta Information will be injected
-    #[serde(default, skip)]
+    #[serde(default)]
     pub meta: HashMap<String, String>,
     // The unix timestamp will be injected
     #[serde(default)]
@@ -71,6 +71,10 @@ pub struct FrontMatter {
     // The unique identifier will be injected (based on the title)
     #[serde(default)]
     pub identifier: String,
+
+    // Should this document be included in the search index?
+    #[serde(default)]
+    pub indexed: bool,
 }
 
 impl FrontMatter {
