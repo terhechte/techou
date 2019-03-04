@@ -15,6 +15,8 @@ fn default_nativetime() -> NaiveDateTime {
     NaiveDate::from_ymd(2016, 7, 8).and_hms(9, 10, 11)
 }
 
+fn default_true() -> bool { true }
+
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct DateInfo {
     pub year: i32,
@@ -73,7 +75,7 @@ pub struct FrontMatter {
     pub identifier: String,
 
     // Should this document be included in the search index?
-    #[serde(default)]
+    #[serde(default = "default_true")]
     pub indexed: bool,
 }
 
