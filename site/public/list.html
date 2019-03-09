@@ -8,6 +8,29 @@
 
 <br/><br/>
 
+
+<h3>Guides</h3>
+
+<div class="tile is-6 is-vertical is-parent">
+    {% for book in context.books %}
+    <div class="tile is-child article-box">
+        <p class="subtitle is-7 article-tile-meta-box">
+            {{ book.info.created }}
+            {% for tag in book.info.tags %}
+            <span><a href="{{ url_tag(id=tag) }}">#{{tag}}</a></span>
+            {% endfor %}
+        </p>
+        <h4 class="title is-4"><a href="{{ url_book(id=book.identifier) }}">{{ book.info.title }}</a></h4>
+        <h4 class="title is-4"><a href="{{ url_chapter(id=book.chapters[0].document.identifier) }}">{{ book.info.title }}</a></h4>
+        <p class="subtitle is-6">
+            {{ book.info.description }}
+        </p>
+    </div>
+    {% endfor %}
+</div>
+
+<br/><br/>
+
 {% if config.Search.enable %}
 <div id="search-wrapper" class="hidden">
 	<input id="searchbar" name="searchbar" type="search" placeholder="Search" aria-label="Search">
@@ -31,6 +54,8 @@
   </li>
 {%- endfor %}
 </ul>
+
+
 
 <h1>lala</h1>
 <ul>

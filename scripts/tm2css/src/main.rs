@@ -70,7 +70,7 @@ fn main() {
         .author("Benedikt Terhechte")
         .arg(Arg::with_name("tm-theme").short("s").value_name("TM-THEME").required(true))
         .arg(Arg::with_name("root-selector").short("f").value_name("ROOT-SELECTOR").required(false))
-        .arg(Arg::with_name("ignore-background").short("i").required(false))
+        .arg(Arg::with_name("ignore-background").short("i").takes_value(false).required(false))
         .get_matches();
     let path = matches.value_of("tm-theme").unwrap();
     let container_name = matches.value_of("root-selector").unwrap_or("pre > code");
