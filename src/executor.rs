@@ -79,6 +79,7 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
     let by_year = posts_by_date(&posts);
     let by_tag = posts_by_array(&posts, |p| &p.info.tags);
     let by_keyword = posts_by_array(&posts, |p| &p.info.keywords);
+    let by_category = posts_by_array(&posts, |p| &p.info.category);
 
     if config.search.enable {
         for book in &books {
@@ -93,6 +94,7 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
             by_date: &by_year,
             by_tag: &by_tag,
             by_keyword: &by_keyword,
+            by_category: &by_category,
     };
 
     template_writer.register_url_functions(&context, &config);
@@ -106,7 +108,9 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
     builder.posts(&posts, &config.folders.posts_folder_name)?;
     builder.pages(&pages, &config.folders.pages_folder_name)?;
     builder.books(&books, &config.folders.books_folder_name)?;
-    builder.tags(&by_tag, &config.folders.tags_folder_name)?;
+    builder.category(&by_tag, &config.folders.tags_folder_name)?;
+    builder.category(&by_keyword, &config.folders.keywords_folder_name)?;
+    builder.category(&by_category, &config.folders.category_folder_name)?;
 
     // Write the indexed pages
     let title_fn = |index| match index {

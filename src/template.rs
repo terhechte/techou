@@ -10,6 +10,7 @@ use crate::io_utils::spit;
 use crate::list::*;
 use crate::server::auto_reload_code;
 use crate::filters;
+use crate::utils::slugify;
 
 use std::path::Path;
 
@@ -72,15 +73,23 @@ impl Templates {
         let post_urls: std::collections::BTreeMap<String, String> = context.posts.iter()
             .map(|d|(d.identifier.clone(), format!("/{}/{}", config.folders.posts_folder_name, d.slug))).collect();
         self.tera.register_function("url_post", make_url_for(post_urls));
+
         let page_urls: std::collections::BTreeMap<String, String> = context.pages.iter()
             .map(|d|(d.identifier.clone(), format!("/{}/{}", config.folders.pages_folder_name, d.slug))).collect();
         self.tera.register_function("url_page", make_url_for(page_urls));
+
         let tag_urls: std::collections::BTreeMap<String, String> = context.by_tag.iter()
-            .map(|t| (t.name.to_string(), format!("/{}/{}", config.folders.tags_folder_name, &t.name))).collect();
+            .map(|t| (t.name.to_string(), format!("/{}/{}.html", config.folders.tags_folder_name, &slugify(&t.name)))).collect();
         self.tera.register_function("url_tag", make_url_for(tag_urls));
-        // FIXME: Have to iterate over all books and all chapters and find the identifiers
-        // and then insert them into two new functions
-        // url_book and url_chapter
+
+        let keyword_urls: std::collections::BTreeMap<String, String> = context.by_keyword.iter()
+            .map(|t| (t.name.to_string(), format!("/{}/{}.html", config.folders.keywords_folder_name, &slugify(&t.name)))).collect();
+        self.tera.register_function("url_keyword", make_url_for(keyword_urls));
+
+        let category_urls: std::collections::BTreeMap<String, String> = context.by_category.iter()
+            .map(|t| (t.name.to_string(), format!("/{}/{}.html", config.folders.category_folder_name, &slugify(&t.name)))).collect();
+        self.tera.register_function("url_category", make_url_for(category_urls));
+
         let mut book_urls: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
         let mut chapter_urls: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
         for book in context.books.iter() {

@@ -92,6 +92,7 @@ impl<'a> Builder<'a> {
                     next: None,
                     previous: None,
                 },
+                list_type: ListType::Index,
             },
             &path,
             &self.config,
@@ -132,7 +133,7 @@ impl<'a> Builder<'a> {
                 title: future_title,
                 index: *index,
                 items: chunk.len(),
-                path: filename.clone(),
+                path: filename.clone()
             });
 
             let pagination = Pagination {
@@ -149,6 +150,7 @@ impl<'a> Builder<'a> {
                     title: &title,
                     posts: chunk,
                     pagination,
+                    list_type: ListType::Index,
                 },
                 &path,
                 &self.config,
@@ -166,8 +168,8 @@ impl<'a> Builder<'a> {
         Ok(())
     }
 
-    /// Write out documents for each tag with the articles for that tag
-    pub fn tags<A: AsRef<Path>>(&self, tag_posts: &[Category<'a>], folder: A) -> Result<()> {
+    /// Write out documents for each category with the articles for that name
+    pub fn category<A: AsRef<Path>>(&self, tag_posts: &[Category<'a>], folder: A) -> Result<()> {
         let folder = self
             .config
             .folders
@@ -186,6 +188,7 @@ impl<'a> Builder<'a> {
                         next: None,
                         previous: None,
                     },
+                    list_type: ListType::Category,
                 },
                 &path,
                 &self.config,

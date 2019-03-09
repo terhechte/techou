@@ -7,6 +7,7 @@ mod list;
 mod parse_event_handlers;
 mod template;
 mod filters;
+mod markdown;
 
 pub mod config;
 pub mod executor;

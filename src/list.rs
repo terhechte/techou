@@ -49,7 +49,15 @@ pub struct DocumentContext<'a> {
     pub by_date: &'a Vec<Year<'a>>,
     pub by_tag: &'a Vec<Category<'a>>,
     pub by_keyword: &'a Vec<Category<'a>>,
+    pub by_category: &'a Vec<Category<'a>>,
 }
+
+#[derive(Serialize, Debug, Clone)]
+pub enum ListType {
+    Index,
+    Category
+}
+
 
 #[derive(Serialize, Debug, Clone)]
 pub struct Page {
@@ -74,6 +82,7 @@ where
     pub title: &'a str,
     pub posts: &'a [D],
     pub pagination: Pagination,
+    pub list_type: ListType,
 }
 
 impl<'a, D: AsRef<Document>> List<'a, D>
@@ -85,6 +94,7 @@ where
             title,
             posts,
             pagination: Default::default(),
+            list_type: ListType::Index,
         }
     }
 }

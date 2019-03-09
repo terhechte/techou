@@ -91,6 +91,8 @@ pub struct ConfigFolders {
     /// Folder names in the generated structure
     pub posts_folder_name: String,
     pub tags_folder_name: String,
+    pub keywords_folder_name: String,
+    pub category_folder_name: String,
     pub pages_folder_name: String,
     pub books_folder_name: String,
 }
@@ -121,6 +123,14 @@ impl ConfigFolders {
         self.output_folder_path().join(&self.tags_folder_name)
     }
 
+    pub fn output_keywords_folder_path(&self) -> PathBuf {
+        self.output_folder_path().join(&self.keywords_folder_name)
+    }
+
+    pub fn output_category_folder_path(&self) -> PathBuf {
+        self.output_folder_path().join(&self.category_folder_name)
+    }
+
     pub fn output_books_folder_path(&self) -> PathBuf {
         self.output_folder_path().join(&self.books_folder_name)
     }
@@ -149,6 +159,8 @@ impl Default for ConfigFolders {
             pages_folder_name: "pages".to_string(),
             books_folder_name: "books".to_string(),
             tags_folder_name: "tags".to_string(),
+            keywords_folder_name: "keywords".to_string(),
+            category_folder_name: "category".to_string(),
         }
     }
 }

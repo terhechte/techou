@@ -5,6 +5,7 @@ use pulldown_cmark::{html, Parser};
 
 use crate::config::Config;
 use crate::error::{Result, TechouError};
+use crate::markdown::*;
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -48,6 +49,8 @@ pub struct FrontMatter {
     #[serde(default)]
     pub keywords: Vec<String>,
     #[serde(default)]
+    pub category: Vec<String>,
+    #[serde(default)]
     pub created: String,
     #[serde(default)]
     pub description: String,
@@ -66,7 +69,7 @@ pub struct FrontMatter {
     // The unix timestamp will be injected
     #[serde(default)]
     pub created_timestamp: i64,
-    #[serde(default = "default_nativetime", skip)]
+    #[serde(default = "default_nativetime")]
     pub date: NaiveDateTime,
     #[serde(default)]
     pub date_info: DateInfo, // FIXME: Move all date/time info into this struct.
@@ -127,12 +130,8 @@ pub fn parse_front_matter<'a, A: AsRef<Path>>(
     front_matter.date = date;
     front_matter.date_info = DateInfo::from(date);
 
-    // Parse the description into html
-    let parser = Parser::new(&front_matter.description);
-
-    let mut html_buf = String::new();
-    html::push_html(&mut html_buf, parser);
-    front_matter.description_html = html_buf;
+    let ParseResult { content, sections } = markdown_to_html(&front_matter.description);
+    front_matter.description_html = content;
 
     Ok((front_matter, article))
 }
