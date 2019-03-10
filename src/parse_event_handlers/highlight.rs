@@ -47,7 +47,7 @@ impl EventHandler for HighlightEventHandler {
                     },
                 };
 
-                let mut html_generator = ClassedHTMLGenerator::new(&syntax, &self.syntax_set);
+                let mut html_generator = ClassedHTMLGenerator::new(&syntax, &self.syntax_set, Some("apv"));
                 let mut lines = LinesWithEndings::from(&self.current_code);
                 for line in lines {
                     html_generator.parse_html_for_line(&line);

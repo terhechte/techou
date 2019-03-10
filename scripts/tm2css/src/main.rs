@@ -16,7 +16,7 @@ impl Default for StyleEntry {
 }
 
 impl StyleEntry {
-    fn css_entries(&self, root: &str) -> Vec<String> {
+    fn css_entries(&self, root: &str, prefix: &Option<&str>) -> Vec<String> {
         let mut results: Vec<String> = Vec::new();
         match &self.scope {
             Some(ref s) => {
@@ -25,7 +25,16 @@ impl StyleEntry {
                     // some themes include a -(ignore). we ignore the ignore
                     if selector.contains("(") { continue }
                     // spaces define hierachies. We need to add dots
-                    let replaced: Vec<String> = selector.trim().split(" ").map(|s| format!(".{}", &s)).collect();
+                    let p = if let Some(p) = prefix { p } else { "" };
+                    let replaced: Vec<String> = selector
+                        .trim()
+                        .split(" ")
+                        .map(|s| {
+                            //let joined = format!(".{}", &s);
+                            let replaced: Vec<String> = s.split(".").map(|s| format!("{}{}", &p, &s)).collect();
+                            format!(".{}", &replaced.join("."))
+                        })
+                        .collect();
                     results.push(self.css_entry(&root, &replaced.join(" ")));
                 }
             },
@@ -71,10 +80,13 @@ fn main() {
         .arg(Arg::with_name("tm-theme").short("s").value_name("TM-THEME").required(true))
         .arg(Arg::with_name("root-selector").short("f").value_name("ROOT-SELECTOR").required(false))
         .arg(Arg::with_name("ignore-background").short("i").takes_value(false).required(false))
+        .arg(Arg::with_name("prefix").short("p").value_name("prefix").required(false))
         .get_matches();
     let path = matches.value_of("tm-theme").unwrap();
     let container_name = matches.value_of("root-selector").unwrap_or("pre > code");
     let ignore_background: bool = matches.is_present("ignore-background");
+    let prefix: Option<&str> = matches.value_of("prefix");
+
 
     let value = Value::from_file(&path).unwrap();
     let dict = match value {
@@ -92,6 +104,7 @@ fn main() {
         Some(Value::Array(array)) => array,
         _ => panic!("Wrong Array Type")
     };
+
     let mut entries: Vec<StyleEntry> = Vec::new();
     for item in theme_settings {
         let item_dict = match item {
@@ -117,11 +130,10 @@ fn main() {
         if let Some(Value::String(font_style)) = settings.get("fontStyle") {
             current.font_style = Some(font_style.to_string());
         }
-
         entries.push(current);
     }
     for e in entries {
-        for s in e.css_entries(&container_name) {
+        for s in e.css_entries(&container_name, &prefix) {
             println!("{}", &s);
         }
     }
