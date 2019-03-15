@@ -2,7 +2,7 @@ use rayon::prelude::*;
 
 use crate::builder;
 use crate::config::Config;
-use crate::document::documents_in_folder;
+use crate::document::{Document, documents_in_folder};
 use crate::document_operations::*;
 use crate::error::Result;
 use crate::feeds;
@@ -77,9 +77,24 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
         }
     }).collect();
     let by_year = posts_by_date(&posts);
-    let by_tag = posts_by_array(&posts, |p| &p.info.tags);
     let by_keyword = posts_by_array(&posts, |p| &p.info.keywords);
     let by_category = posts_by_array(&posts, |p| &p.info.category);
+
+    let mut all_posts: Vec<&Document> = posts.iter().collect();
+    for book in &books {
+        // Temporarily awful
+        for chapter in &book.chapters {
+            all_posts.push(&chapter.document);
+            for chapter in &chapter.sub_chapters {
+                all_posts.push(&chapter.document);
+                for chapter in &chapter.sub_chapters {
+                    all_posts.push(&chapter.document);
+                }
+            }
+        }
+    }
+    //let by_tag = posts_by_array(&posts, |p| &p.info.tags);
+    let by_tag = posts_by_array(&all_posts, |p| &p.info.tags);
 
     if config.search.enable {
         for book in &books {
@@ -89,6 +104,7 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
 
     let context = DocumentContext {
             posts: &posts,
+            all_posts: &all_posts,
             pages: &pages,
             books: &books,
             by_date: &by_year,

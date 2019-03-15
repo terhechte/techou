@@ -42,6 +42,7 @@ mod tests {
     #[test]
     fn test_sections() {
         use crate::document;
+        use crate::markdown::*;
         let contents = r#"
 # Section 1
 Hello world
@@ -49,7 +50,7 @@ Hello world
 More text
 ## Another section
 # Final section"#;
-        let result = document::markdown_to_html(&contents);
+        let result = markdown_to_html(&contents);
         assert_eq!(result.sections.len(), 4);
         assert_eq!(result.sections[0].1, "Section 1");
     }
@@ -57,6 +58,7 @@ More text
     #[test]
     fn test_syntax() {
         use crate::document;
+        use crate::markdown::*;
         let contents = r#"
 # Section 1
 `printf()`
@@ -68,7 +70,7 @@ if let Some(x) = variable {
 }
 
 "#;
-        let result = document::markdown_to_html(&contents);
+        let result = markdown_to_html(&contents);
         // Test for the CSS classes
         assert!(result.content.contains("source rust"));
     }

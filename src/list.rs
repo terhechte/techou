@@ -45,6 +45,7 @@ impl<'a> From<(u32, Vec<&'a Document>)> for Month<'a> {
 pub struct DocumentContext<'a> {
     pub pages: &'a Vec<Document>,
     pub posts: &'a Vec<Document>,
+    pub all_posts: &'a Vec<&'a Document>,
     pub books: &'a Vec<Book>,
     pub by_date: &'a Vec<Year<'a>>,
     pub by_tag: &'a Vec<Category<'a>>,

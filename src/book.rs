@@ -46,6 +46,22 @@ impl Book {
             chapters
         })
     }
+
+    // Apply `fn` recursively to all documents in this guide
+    /*pub fn with_documents<'a, Action>(&'a self, action: Action)
+      where Action: FnMut(&'a Document) + 'a {
+        Book::recursive_with_documents(&self.chapters, &action);
+    }
+
+    fn recursive_with_documents<'a, Action>(input: &'a Vec<Chapter>, action: &Action)
+        where Action: FnMut(&'a Document) + 'a {
+        for chapter in input.iter() {
+            action(&chapter.document);
+            if !chapter.sub_chapters.is_empty() {
+                Book::recursive_with_documents(&chapter.sub_chapters, action);
+            }
+        }
+    }*/
 }
 
 #[derive(Serialize, Debug, Clone)]

@@ -70,7 +70,7 @@ impl Templates {
     }
 
     pub fn register_url_functions(&mut self, context: &DocumentContext, config: &Config) {
-        let post_urls: std::collections::BTreeMap<String, String> = context.posts.iter()
+        let post_urls: std::collections::BTreeMap<String, String> = context.all_posts.iter()
             .map(|d|(d.identifier.clone(), format!("/{}/{}", config.folders.posts_folder_name, d.slug))).collect();
         self.tera.register_function("url_post", make_url_for(post_urls));
 
