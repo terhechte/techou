@@ -1,4 +1,5 @@
 # Changes required for 1.0
+- instead of `format!` use proper `PathBuf` code everywhere to generate folders, slugs
 - use multi_try crate for error handling
 - expose enough functions to re-implement executor in bin
 - all documents (from guides, posts, etc) should be registered in one state,

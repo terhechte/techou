@@ -35,7 +35,7 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
     let mut searcher = Searcher::new(&config);
 
     println!("Root folder: {:?}", &config.folders.root);
-    let mut posts = documents_in_folder(&config.folders.posts_folder_path(), &config, &cache)?;
+    let mut posts = documents_in_folder(&config.folders.posts_folder_path(), &config.folders.posts_folder_name, &config, &cache)?;
     posts.sort_by(|a1, a2| {
         a2.info
             .created_timestamp
@@ -59,7 +59,7 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
 
     let mut template_writer = Templates::new(&config.folders.public_folder_path()).unwrap();
 
-    let pages = documents_in_folder(&config.folders.pages_folder_path(), &config, &cache)?;
+    let pages = documents_in_folder(&config.folders.pages_folder_path(), &config.folders.pages_folder_name, &config, &cache)?;
 
     if config.search.enable {
         for document in &pages {
@@ -121,8 +121,8 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
         &config,
     );
 
-    builder.posts(&posts, &config.folders.posts_folder_name)?;
-    builder.pages(&pages, &config.folders.pages_folder_name)?;
+    builder.posts(&posts)?;
+    builder.pages(&pages)?;
     builder.books(&books, &config.folders.books_folder_name)?;
     builder.category(&by_tag, &config.folders.tags_folder_name)?;
     builder.category(&by_keyword, &config.folders.keywords_folder_name)?;

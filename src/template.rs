@@ -71,11 +71,11 @@ impl Templates {
 
     pub fn register_url_functions(&mut self, context: &DocumentContext, config: &Config) {
         let post_urls: std::collections::BTreeMap<String, String> = context.all_posts.iter()
-            .map(|d|(d.identifier.clone(), format!("/{}/{}", config.folders.posts_folder_name, d.slug))).collect();
+            .map(|d|(d.identifier.clone(), d.slug.clone())).collect();
         self.tera.register_function("url_post", make_url_for(post_urls));
 
         let page_urls: std::collections::BTreeMap<String, String> = context.pages.iter()
-            .map(|d|(d.identifier.clone(), format!("/{}/{}", config.folders.pages_folder_name, d.slug))).collect();
+            .map(|d|(d.identifier.clone(), d.slug.clone())).collect();
         self.tera.register_function("url_page", make_url_for(page_urls));
 
         let tag_urls: std::collections::BTreeMap<String, String> = context.by_tag.iter()

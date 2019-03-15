@@ -8,7 +8,24 @@ use crate::list::*;
 use crate::template::Templates;
 use crate::utils;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+trait NonAdjoinedPush {
+    fn nonAdjoinedPush(&self, path: &str) -> PathBuf;
+}
+
+impl NonAdjoinedPush for PathBuf {
+    fn nonAdjoinedPush(&self, path: &str) -> PathBuf {
+        let mut iter = path.chars();
+        if let Some(first) = iter.next() {
+            if first == '/' {
+                let path: String = iter.collect();
+                return self.join(&path);
+            }
+        }
+        self.join(path)
+    }
+}
 
 pub struct Builder<'a> {
     context: DocumentContext<'a>,
@@ -36,14 +53,13 @@ impl<'a> Builder<'a> {
     /// output folder as part of the name.
     /// If `html/posts` is your output folder / posts folder, then `posts` would be
     /// the correct value for `folder`
-    pub fn posts<A: AsRef<Path>>(&self, posts: &[Document], folder: A) -> Result<()> {
+    pub fn posts(&self, posts: &[Document]) -> Result<()> {
         let folder = self
             .config
             .folders
-            .output_folder_path()
-            .join(folder.as_ref());
+            .output_folder_path();
         posts.par_iter().for_each(|post| {
-            let path = folder.join(&post.slug);
+            let path = folder.nonAdjoinedPush(&post.slug);
             match self
                 .template_writer
                 .write_post(&self.context, &post, &path, &self.config)
@@ -55,14 +71,13 @@ impl<'a> Builder<'a> {
         Ok(())
     }
 
-    pub fn pages<A: AsRef<Path>>(&self, pages: &[Document], folder: A) -> Result<()> {
+    pub fn pages(&self, pages: &[Document]) -> Result<()> {
         let folder = self
             .config
             .folders
-            .output_folder_path()
-            .join(folder.as_ref());
+            .output_folder_path();
         pages.par_iter().for_each(|page| {
-            let path = folder.join(&page.slug);
+            let path = folder.nonAdjoinedPush(&page.slug);
             match self
                 .template_writer
                 .write_page(&self.context, &page, &path, &self.config)

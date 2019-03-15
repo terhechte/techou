@@ -283,33 +283,3 @@ impl<'a> Searcher<'a> {
 }
 
 
-/*pub fn create_files(search_config: &Search, destination: &Path, book: &Book) -> Result<()> {
-    let mut index = Index::new(&["title", "body", "breadcrumbs"]);
-    let mut doc_urls = Vec::with_capacity(book.sections.len());
-
-    for item in book.iter() {
-        render_item(&mut index, &search_config, &mut doc_urls, item)?;
-    }
-
-    let index = write_to_json(index, &search_config, doc_urls)?;
-    debug!("Writing search index ✓");
-    if index.len() > 10_000_000 {
-        warn!("searchindex.json is very large ({} bytes)", index.len());
-    }
-
-    if search_config.copy_js {
-        utils::fs::write_file(destination, "searchindex.json", index.as_bytes())?;
-        utils::fs::write_file(
-            destination,
-            "searchindex.js",
-            format!("window.search = {};", index).as_bytes(),
-        )?;
-        utils::fs::write_file(destination, "searcher.js", searcher::JS)?;
-        utils::fs::write_file(destination, "mark.min.js", searcher::MARK_JS)?;
-        utils::fs::write_file(destination, "elasticlunr.min.js", searcher::ELASTICLUNR_JS)?;
-        debug!("Copying search files ✓");
-    }
-
-    Ok(())
-}
-*/

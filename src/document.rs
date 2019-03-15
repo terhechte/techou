@@ -40,7 +40,7 @@ impl AsRef<Document> for Document {
 }
 
 impl Document {
-    pub fn new<A: AsRef<Path>>(contents: &str, path: A, config: &Config) -> Result<Document> {
+    pub fn new<A: AsRef<Path>>(contents: &str, path: A, slug_base: &str, config: &Config) -> Result<Document> {
         let filename = path
             .as_ref()
             .file_name()
@@ -51,7 +51,7 @@ impl Document {
             .to_string();
         let identifier = utils::hash_string(&filename, 8);
         let (info, article) = parse_front_matter(&contents, &path.as_ref(), &config)?;
-        let slug = slug_from_frontmatter(&info);
+        let slug = slug_from_frontmatter(&info, slug_base);
         let ParseResult { content, sections } = markdown_to_html(article);
         Ok(Document {
             identifier,
@@ -79,7 +79,7 @@ impl Document {
     }
 }
 
-pub fn documents_in_folder<A: AsRef<Path>>(folder: A, config: &Config, cache: &crate::build_cache::BuildCache) -> Result<Vec<Document>> {
+pub fn documents_in_folder<A: AsRef<Path>>(folder: A, base: &str, config: &Config, cache: &crate::build_cache::BuildCache) -> Result<Vec<Document>> {
     use crate::io_utils::{contents_of_directory, slurp};
     let files = contents_of_directory(folder.as_ref(), "md")?;
     let posts: Vec<Document> = files
@@ -99,7 +99,7 @@ pub fn documents_in_folder<A: AsRef<Path>>(folder: A, config: &Config, cache: &c
                 return Some(existing)
             }
 
-            let post = match Document::new(&contents, &path, &config) {
+            let post = match Document::new(&contents, &path, &base, &config) {
                 Ok(a) => a,
                 Err(e) => {
                     println!("Invalid Format {:?}: {:?}", &path, &e);
@@ -113,14 +113,14 @@ pub fn documents_in_folder<A: AsRef<Path>>(folder: A, config: &Config, cache: &c
     Ok(posts)
 }
 
-fn slug_from_frontmatter(front_matter: &FrontMatter) -> String {
+fn slug_from_frontmatter(front_matter: &FrontMatter, slug_base: &str) -> String {
     if let Some(slug) = &front_matter.slug {
-        return slug.clone();
+        return format!("/{}/{}", slug_base, slug);
     }
     // make lowercase ascii-only title
     let title = utils::slugify(&front_matter.title);
     let d = &front_matter.date;
-    format!("{}-{}-{}-{}.html", d.year(), d.month(), d.day(), title)
+    format!("/{}/{}-{}-{}-{}.html", slug_base, d.year(), d.month(), d.day(), title)
 }
 
 #[cfg(test)]
@@ -141,8 +141,8 @@ published = true
 this is the actual article contents yeah."#;
         let (frontmatter, _) =
             front_matter::parse_front_matter(&contents, "yeah.md", &Default::default()).unwrap();
-        let slug = document::slug_from_frontmatter(&frontmatter);
-        assert_eq!(slug, "2009-12-30-hello-world.html");
+        let slug = document::slug_from_frontmatter(&frontmatter, "posts");
+        assert_eq!(slug, "/posts/2009-12-30-hello-world.html");
     }
 
 }

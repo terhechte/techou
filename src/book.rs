@@ -46,22 +46,6 @@ impl Book {
             chapters
         })
     }
-
-    // Apply `fn` recursively to all documents in this guide
-    /*pub fn with_documents<'a, Action>(&'a self, action: Action)
-      where Action: FnMut(&'a Document) + 'a {
-        Book::recursive_with_documents(&self.chapters, &action);
-    }
-
-    fn recursive_with_documents<'a, Action>(input: &'a Vec<Chapter>, action: &Action)
-        where Action: FnMut(&'a Document) + 'a {
-        for chapter in input.iter() {
-            action(&chapter.document);
-            if !chapter.sub_chapters.is_empty() {
-                Book::recursive_with_documents(&chapter.sub_chapters, action);
-            }
-        }
-    }*/
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -106,7 +90,7 @@ pub struct ChapterInfo {
 impl ChapterInfo {
     fn convert(self, config: &Config) -> Result<Chapter> {
         let contents = slurp(&self.file_url)?;
-        let mut doc = Document::new(&contents, &self.file_url, &config)?;
+        let mut doc = Document::new(&contents, &self.file_url, "", &config)?;
         doc.slug = self.slug.clone();
         let chapters: Vec<Chapter> = self.sub_chapters.into_par_iter().filter_map(|c| match c.convert(&config) {
             Ok(s) => Some(s),
