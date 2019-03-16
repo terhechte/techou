@@ -11,6 +11,7 @@ use std::path::PathBuf;
 static DEFAULT_PROJECT_TOML: &str = r#"
 [Project]
 keywords = ["nam", "nom", "grah"]
+# baseURL = "https://example.com"
 
 # How many posts per index (default: 8)
 # postsPerIndex = 9
@@ -61,6 +62,8 @@ fn default_posts_per_index() -> u32 {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ConfigProject {
+    #[serde(rename = "baseURL")]
+    pub base_url: String, // the base url of the website
     #[serde(default)]
     pub keywords: Vec<String>,
     #[serde(default)]
@@ -213,6 +216,7 @@ impl Default for ConfigServer {
 impl Default for ConfigProject {
     fn default() -> Self {
         ConfigProject {
+            base_url: Default::default(),
             keywords: Default::default(),
             title: Default::default(),
             description: Default::default(),
@@ -243,8 +247,6 @@ pub struct ConfigServer {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ConfigRSS {
-    #[serde(rename = "baseURL")]
-    pub base_url: String, // the base url of the website
     pub feed_address: String, // the feed file name
     pub title: String,
     pub description: Option<String>,

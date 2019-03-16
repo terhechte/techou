@@ -12,6 +12,7 @@ use crate::template::Templates;
 use crate::book::Book;
 use crate::build_cache::BuildCache;
 use crate::search::Searcher;
+use crate::sitemap::SiteMap;
 
 pub fn execute(ignore_errors: bool, config: &Config, cache: &BuildCache) -> Result<()> {
     match catchable_execute(&config, &cache) {
@@ -144,6 +145,7 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
             &posts,
             &config.folders.output_folder_path().join("feed.rss"),
             &rss,
+            &config.project.base_url
         )?;
     }
 
@@ -160,6 +162,26 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
         let search_index_output_path = config.folders.output_folder_path().join(&config.search.search_index_file);
         spit(search_index_output_path, &search_contents);
     }
+
+    // create a site map
+    let outfile = config.folders.output_folder_path().join("sitemap.xml");
+    let mut sitemap = SiteMap::new(outfile, &config.project.base_url);
+    for post in &all_posts {
+        sitemap.add_document(&post);
+    }
+    // FIXME: Terrible, we need a better way to handle the recusrive book structure
+    /*for book in books {
+        book.map(|chapter| {
+            sitemap.add_document(&chapter.document);
+        })
+    }*/
+
+    for page in &pages {
+        sitemap.add_document(&page);
+    }
+
+    sitemap.finish();
+
 
     let end = std::time::Instant::now();
     println!("Execution time: {:?}", end - begin);

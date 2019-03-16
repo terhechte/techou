@@ -57,6 +57,19 @@ impl Book {
         Ok(book)
     }
 
+    pub fn map<Action>(&self, action: Action)
+        where Action: Fn(&Chapter) {
+        Book::map_recursive(&self.chapters, &action);
+    }
+
+    fn map_recursive<Action>(chapters: &[Chapter], action: &Action)
+        where Action: Fn(&Chapter) {
+        for chapter in chapters {
+            action(chapter);
+            Book::map_recursive(&chapter.sub_chapters, &action);
+        }
+    }
+
     /// Render the whole book (i.e. all chapters) as one one document
     /// This is currently a not-so-nice solution.
     /// It writes all the html together into one document with the

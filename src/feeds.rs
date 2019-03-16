@@ -11,6 +11,7 @@ pub fn write_posts_rss<A: AsRef<Path>>(
     posts: &[Document],
     to_path: A,
     rss: &ConfigRSS,
+    base_url: &str
 ) -> Result<()> {
     let author = match &rss.author_name {
         Some(name) => format!("{} ({})", &rss.author_email, name),
@@ -19,7 +20,7 @@ pub fn write_posts_rss<A: AsRef<Path>>(
     let items: Vec<Item> = posts
         .iter()
         .map(|post| {
-            let link = format!("{}/{}", &rss.base_url, &post.slug);
+            let link = format!("{}/{}", &base_url, &post.slug);
             ItemBuilder::default()
                 .itunes_ext(extension::itunes::ITunesItemExtension::default())
                 .dublin_core_ext(extension::dublincore::DublinCoreExtension::default())
@@ -32,7 +33,7 @@ pub fn write_posts_rss<A: AsRef<Path>>(
                 .unwrap()
         })
         .collect();
-    let link = format!("{}/{}", &rss.base_url, &rss.feed_address);
+    let link = format!("{}/{}", &base_url, &rss.feed_address);
     let mut channel = ChannelBuilder::default()
         .title(rss.title.clone())
         .link(link)
