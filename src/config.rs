@@ -42,7 +42,8 @@ dateFormat = "%Y-%m-%d"
 serverAddress = "127.0.0.1:8001"
 
 # [RSS]
-# absoluteFeedAddress = "https://example.com/feed.rss"
+# baseURL = "http://example.com"
+# feedAddress = "/feed.rss"
 # title = "My Blog"
 # authorEmail = "john@doe.com"
 # authorName = "John Doe"
@@ -239,15 +240,16 @@ pub struct ConfigServer {
     pub auto_reload_websocket_path: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-#[serde(rename_all = "camelCase", default)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct ConfigRSS {
-    pub absolute_feed_address: String, // the absolute URL of the feed
+    #[serde(rename = "baseURL")]
+    pub base_url: String, // the base url of the website
+    pub feed_address: String, // the feed file name
     pub title: String,
-    pub link: String,
-    pub description: String,
+    pub description: Option<String>,
     pub author_email: String,
-    pub author_name: String,
+    pub author_name: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

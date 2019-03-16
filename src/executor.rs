@@ -139,11 +139,13 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
     builder.indexes_paged(&posts, config.project.posts_per_index as usize, title_fn, "")?;
 
     // Write the feed
-    feeds::write_posts_rss(
-        &posts,
-        &config.folders.output_folder_path().join("feed.rss"),
-        &config,
-    )?;
+    if let Some(rss) = &config.rss {
+        feeds::write_posts_rss(
+            &posts,
+            &config.folders.output_folder_path().join("feed.rss"),
+            &rss,
+        )?;
+    }
 
     // Write the assets
     copy_items_to_directory(
