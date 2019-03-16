@@ -7,6 +7,7 @@ use crate::error::Result;
 use crate::io_utils::slurp;
 use crate::front_matter::*;
 use crate::config::Config;
+use std::path::PathBuf;
 
 #[derive(Serialize, Debug)]
 pub struct Book {
@@ -14,7 +15,8 @@ pub struct Book {
     pub slug: String,
     pub folder: String,
     pub info: FrontMatter,
-    pub chapters: Vec<Chapter>
+    pub chapters: Vec<Chapter>,
+    pub complete_book: Option<Document>
 }
 
 impl Book {
@@ -38,13 +40,59 @@ impl Book {
                 issue: format!("Empty book {} will not be included", &info.title)
             });
         }
-        Ok(Book {
+        let mut book = Book {
             identifier: format!("{:?}", file.as_ref()),
             slug: chapters[0].slug.clone(),
             folder: file.as_ref().parent().expect("Proper book path").to_str().expect("Proper book path").to_string(),
             info,
-            chapters
-        })
+            chapters,
+            complete_book: None
+        };
+
+        if config.project.render_one_page_books {
+            let complete_book = book.as_one_document();
+            book.complete_book = Some(complete_book);
+        }
+
+        Ok(book)
+    }
+
+    /// Render the whole book (i.e. all chapters) as one one document
+    /// This is currently a not-so-nice solution.
+    /// It writes all the html together into one document with the
+    /// frontMatter of the original document
+    /// Then, it merges them with <h1> headlines
+    pub fn as_one_document(&self) -> Document {
+        let mut buffer: String = String::new();
+        let mut sections: Vec<(String, String)> = Vec::new();
+        Book::recursive_add(&self.chapters, &mut buffer, &mut sections);
+
+        let slug_path = PathBuf::from(&self.slug);
+        let parent = slug_path.parent().expect("Expect a parent for a book");
+        let filename = "complete_book.html";
+        let slug = parent.join(&filename);
+        let slug = slug.to_str().expect("Proper String");
+        Document::from_multiple(
+            buffer,
+            "",
+            slug,
+            &filename,
+            &self.info,
+            sections
+        )
+    }
+
+    fn recursive_add(chapters: &Vec<Chapter>, into_buffer: &mut String, sections: &mut Vec<(String, String)>) {
+        //let mut counter = 1;
+        for chapter in chapters.iter() {
+            // This is not needed as chapters always start with their name anyway
+            //into_buffer.push_str(&format!("<h1 id=\"header-section-{}\">{}</h1>", &counter, chapter.name));
+            //sections.push((format!("header-section-{}", counter), chapter.name.clone()));
+            //counter += 1;
+            into_buffer.push_str(&chapter.document.content);
+            let mut cloned = chapter.document.sections.clone();
+            sections.append(&mut cloned);
+        }
     }
 }
 

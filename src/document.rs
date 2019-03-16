@@ -26,7 +26,7 @@ pub struct Document {
     pub slug: String,
     pub content: String,
     pub raw_content: String,
-    pub sections: Vec<(u32, String)>,
+    pub sections: Vec<(String, String)>,
     pub similar_documents: Vec<(u32, DocumentLink)>,
     pub previous_document: Option<DocumentLink>,
     pub next_document: Option<DocumentLink>
@@ -52,7 +52,8 @@ impl Document {
         let identifier = utils::hash_string(&filename, 8);
         let (info, article) = parse_front_matter(&contents, &path.as_ref(), &config)?;
         let slug = slug_from_frontmatter(&info, slug_base);
-        let ParseResult { content, sections } = markdown_to_html(article);
+        let ParseResult { content, sections } = markdown_to_html(article, &identifier);
+        let sections = sections.into_iter().map(|(number, title)| (format!("{}-{}", &identifier, &number), title)).collect();
         Ok(Document {
             identifier,
             filename,
@@ -65,6 +66,21 @@ impl Document {
             next_document: None,
             previous_document: None
         })
+    }
+
+    pub fn from_multiple(html_contents: String, partial_markdown_contents: &str, slug: &str, filename: &str, info: &FrontMatter, sections: Vec<(String, String)>) -> Document {
+        Document {
+            identifier: utils::hash_string(&slug, 4),
+            filename: filename.to_string(),
+            info: info.clone(),
+            slug: slug.to_string(),
+            content: html_contents,
+            raw_content: partial_markdown_contents.to_string(),
+            sections: sections,
+            similar_documents: Vec::new(),
+            next_document: None,
+            previous_document: None
+        }
     }
 }
 

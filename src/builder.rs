@@ -237,6 +237,15 @@ impl<'a> Builder<'a> {
                     Ok(_) => () /*println!("Wrote '{:?}'", &path)*/,
                     Err(e) => println!("Could not write book {}: {:?}", &book.identifier, &e),
                 }
+
+            // If we have the book as one document, write that out
+            if let Some(ref whole_book) = book.complete_book {
+                let path = &self.config.folders.output_folder_path().join(&whole_book.slug);
+                match self.template_writer.write_post(&self.context, whole_book, &path, &self.config) {
+                    Ok(_) => (),
+                    Err(e) => println!("Could not write whole book {}: {:?} {:?}", &whole_book.identifier, &path, &e)
+                }
+            }
         });
         Ok(())
     }

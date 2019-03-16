@@ -13,7 +13,7 @@ static DEFAULT_PROJECT_TOML: &str = r#"
 keywords = ["nam", "nom", "grah"]
 
 # How many posts per index (default: 8)
-# postsPerIndex = 8
+# postsPerIndex = 9
 
 [Folders]
 # Where are your posts
@@ -68,6 +68,8 @@ pub struct ConfigProject {
     pub description: String,
     #[serde(default = "default_posts_per_index")]
     pub posts_per_index: u32,
+    #[serde(default)]
+    pub render_one_page_books: bool
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -213,7 +215,8 @@ impl Default for ConfigProject {
             keywords: Default::default(),
             title: Default::default(),
             description: Default::default(),
-            posts_per_index: default_posts_per_index()
+            posts_per_index: default_posts_per_index(),
+            render_one_page_books: false
         }
     }
 }

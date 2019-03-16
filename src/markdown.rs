@@ -6,7 +6,7 @@ pub use crate::parse_event_handlers::ParseResult;
 
 
 // Transform the AST of the markdown to support custom markdown constructs
-pub fn markdown_to_html(markdown: &str) -> ParseResult {
+pub fn markdown_to_html(markdown: &str, section_identifier: &str) -> ParseResult {
     let mut opts = Options::empty();
     opts.insert(Options::ENABLE_TABLES);
     opts.insert(Options::ENABLE_FOOTNOTES);
@@ -19,7 +19,7 @@ pub fn markdown_to_html(markdown: &str) -> ParseResult {
     };
 
     let mut handlers: Vec<Box<dyn EventHandler>> = vec![
-        Box::new(SectionEventHandler::new()),
+        Box::new(SectionEventHandler::new(section_identifier)),
         Box::new(HighlightEventHandler::new()),
     ];
 
@@ -50,7 +50,7 @@ Hello world
 More text
 ## Another section
 # Final section"#;
-        let result = markdown_to_html(&contents);
+        let result = markdown_to_html(&contents, "");
         assert_eq!(result.sections.len(), 4);
         assert_eq!(result.sections[0].1, "Section 1");
     }
@@ -70,7 +70,7 @@ if let Some(x) = variable {
 }
 
 "#;
-        let result = markdown_to_html(&contents);
+        let result = markdown_to_html(&contents, "");
         // Test for the CSS classes
         assert!(result.content.contains("source rust"));
     }

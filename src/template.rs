@@ -14,7 +14,7 @@ use crate::utils::slugify;
 
 use std::path::Path;
 
-fn make_url_for(urls: std::collections::BTreeMap<String, String>) -> tera::GlobalFn {
+fn make_url_for(urls: std::collections::BTreeMap<String, String>, context: &'static str) -> tera::GlobalFn {
     Box::new(move |args| -> tera::Result<tera::Value> {
         let id = match args.get("id") {
             Some(val) => match tera::from_value::<String>(val.clone()) {
@@ -25,7 +25,7 @@ fn make_url_for(urls: std::collections::BTreeMap<String, String>) -> tera::Globa
         };
         let entry = match urls.get(&id) {
             Some(v) => v,
-            None => return Err(format!("No entity with id `{}` found", &id).into()),
+            None => return Err(format!("No entity with id `{}` found ({})", &id, &context).into()),
         };
         tera::to_value(entry).map_err(|e| e.into())
     })
@@ -72,23 +72,23 @@ impl Templates {
     pub fn register_url_functions(&mut self, context: &DocumentContext, config: &Config) {
         let post_urls: std::collections::BTreeMap<String, String> = context.all_posts.iter()
             .map(|d|(d.identifier.clone(), d.slug.clone())).collect();
-        self.tera.register_function("url_post", make_url_for(post_urls));
+        self.tera.register_function("url_post", make_url_for(post_urls, "url_post"));
 
         let page_urls: std::collections::BTreeMap<String, String> = context.pages.iter()
             .map(|d|(d.identifier.clone(), d.slug.clone())).collect();
-        self.tera.register_function("url_page", make_url_for(page_urls));
+        self.tera.register_function("url_page", make_url_for(page_urls, "url_page"));
 
         let tag_urls: std::collections::BTreeMap<String, String> = context.by_tag.iter()
             .map(|t| (t.name.to_string(), format!("/{}/{}.html", config.folders.tags_folder_name, &slugify(&t.name)))).collect();
-        self.tera.register_function("url_tag", make_url_for(tag_urls));
+        self.tera.register_function("url_tag", make_url_for(tag_urls, "url_tag"));
 
         let keyword_urls: std::collections::BTreeMap<String, String> = context.by_keyword.iter()
             .map(|t| (t.name.to_string(), format!("/{}/{}.html", config.folders.keywords_folder_name, &slugify(&t.name)))).collect();
-        self.tera.register_function("url_keyword", make_url_for(keyword_urls));
+        self.tera.register_function("url_keyword", make_url_for(keyword_urls, "url_keyword"));
 
         let category_urls: std::collections::BTreeMap<String, String> = context.by_category.iter()
             .map(|t| (t.name.to_string(), format!("/{}/{}.html", config.folders.category_folder_name, &slugify(&t.name)))).collect();
-        self.tera.register_function("url_category", make_url_for(category_urls));
+        self.tera.register_function("url_category", make_url_for(category_urls, "url_category"));
 
         let mut book_urls: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
         let mut chapter_urls: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
@@ -98,8 +98,8 @@ impl Templates {
                 recusive_chapter_urls(&mut chapter_urls, &chapter, &config);
             }
         }
-        self.tera.register_function("url_chapter", make_url_for(chapter_urls));
-        self.tera.register_function("url_book", make_url_for(book_urls));
+        self.tera.register_function("url_chapter", make_url_for(chapter_urls, "url_chapter"));
+        self.tera.register_function("url_book", make_url_for(book_urls, "url_book"));
     }
 
     pub fn write_post<'a, A: AsRef<Path>>(
