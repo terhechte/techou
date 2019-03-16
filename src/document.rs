@@ -122,6 +122,9 @@ pub fn documents_in_folder<A: AsRef<Path>>(folder: A, base: &str, config: &Confi
                     return None;
                 }
             };
+            if post.info.published == false {
+                return None;
+            }
             cache.set_item(&cache_key, &post);
             Some(post)
         })

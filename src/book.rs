@@ -28,7 +28,12 @@ impl Book {
         let chapter_info = parse_chapter(md, &config.folders.books_folder_path().join(&folder),
                                          &book_folder);
         let chapters: Vec<Chapter> = chapter_info.into_par_iter().filter_map(|c| match c.convert(&config) {
-            Ok(s) => Some(s),
+            Ok(s) => {
+                if s.document.info.published == false {
+                    return None;
+                }
+                Some(s)
+            },
             Err(e) => {
                 println!("{:?}", &e);
                 None
@@ -154,7 +159,12 @@ impl ChapterInfo {
         let mut doc = Document::new(&contents, &self.file_url, "", &config)?;
         doc.slug = self.slug.clone();
         let chapters: Vec<Chapter> = self.sub_chapters.into_par_iter().filter_map(|c| match c.convert(&config) {
-            Ok(s) => Some(s),
+            Ok(s) =>  {
+                if s.document.info.published == false {
+                    return None;
+                }
+                Some(s)
+            },
             Err(e) => {
                 println!("{:?}", &e);
                 None
