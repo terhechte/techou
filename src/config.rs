@@ -48,6 +48,12 @@ serverAddress = "127.0.0.1:8001"
 # authorEmail = "john@doe.com"
 # authorName = "John Doe"
 
+# [Shortlinks]
+# Short map from a short link such as `lnk::bookarticle` to `/articles/book.html`
+# or `lnk::article2` to `https://example.com/article2.html`
+# article2 = "https://example.com/article2.html"
+# bookarticle = "/articles/book.html"
+
 # This is where you can add additional meta information.
 # they're available in all templates
 # [Meta]
@@ -331,6 +337,10 @@ pub struct Config {
     /// Search
     #[serde(rename="Search", default)]
     pub search: ConfigSearch,
+
+    /// Shortlinks
+    #[serde(default, rename = "Shortlinks")]
+    pub short_links: Option<HashMap<String, String>>,
 
     /// Meta
     #[serde(default, rename = "Meta")]
