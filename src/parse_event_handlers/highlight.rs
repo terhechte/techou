@@ -11,17 +11,19 @@ pub struct HighlightEventHandler {
     next_text_is_code: bool,
     language: String,
     current_code: String,
-    syntax_set: SyntaxSet
+    syntax_set: SyntaxSet,
+    prefix: Option<String>
 }
 
 impl HighlightEventHandler {
-    pub fn new() -> HighlightEventHandler {
+    pub fn new(prefix: Option<String>) -> HighlightEventHandler {
         let ps = SyntaxSet::load_defaults_newlines();
         HighlightEventHandler {
             next_text_is_code: false,
             language: "text".to_owned(),
             current_code: String::new(),
-            syntax_set: ps
+            syntax_set: ps,
+            prefix
         }
     }
 }
@@ -47,7 +49,8 @@ impl EventHandler for HighlightEventHandler {
                     },
                 };
 
-                let mut html_generator = ClassedHTMLGenerator::new(&syntax, &self.syntax_set, Some("apv"));
+                let mut html_generator = ClassedHTMLGenerator::new(&syntax, &self.syntax_set,
+                                                                   self.prefix.as_ref().map(String::as_str));
                 let mut lines = LinesWithEndings::from(&self.current_code);
                 for line in lines {
                     html_generator.parse_html_for_line(&line);

@@ -130,7 +130,7 @@ pub fn parse_front_matter<'a, A: AsRef<Path>>(
     front_matter.date = date;
     front_matter.date_info = DateInfo::from(date);
 
-    let ParseResult { content, sections } = markdown_to_html(&front_matter.description, "", &None);
+    let ParseResult { content, sections } = markdown_to_html(&front_matter.description, "", &None, None);
     front_matter.description_html = content;
 
     Ok((front_matter, article))

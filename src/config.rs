@@ -78,7 +78,9 @@ pub struct ConfigProject {
     #[serde(default = "default_posts_per_index")]
     pub posts_per_index: u32,
     #[serde(default)]
-    pub render_one_page_books: bool
+    pub render_one_page_books: bool,
+    #[serde(default)]
+    pub code_class_prefix: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -226,7 +228,8 @@ impl Default for ConfigProject {
             title: Default::default(),
             description: Default::default(),
             posts_per_index: default_posts_per_index(),
-            render_one_page_books: false
+            render_one_page_books: false,
+            code_class_prefix: None
         }
     }
 }

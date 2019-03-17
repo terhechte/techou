@@ -53,7 +53,9 @@ impl Document {
         let (info, article) = parse_front_matter(&contents, &path.as_ref(), &config)?;
         let slug = slug_from_frontmatter(&info, slug_base);
         let ParseResult { content, sections } =
-            markdown_to_html(article, &identifier, &config.short_links);
+            markdown_to_html(article, &identifier,
+                             &config.short_links,
+            config.project.code_class_prefix.clone());
         let sections = sections.into_iter().map(|(number, title)| (format!("{}-{}", &identifier, &number), title)).collect();
         Ok(Document {
             identifier,

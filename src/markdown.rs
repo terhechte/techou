@@ -7,7 +7,7 @@ pub use crate::parse_event_handlers::ParseResult;
 use std::collections::HashMap;
 
 // Transform the AST of the markdown to support custom markdown constructs
-pub fn markdown_to_html(markdown: &str, section_identifier: &str, links: &Option<HashMap<String, String>>) -> ParseResult {
+pub fn markdown_to_html(markdown: &str, section_identifier: &str, links: &Option<HashMap<String, String>>, code_prefix: Option<String>) -> ParseResult {
     let mut opts = Options::empty();
     opts.insert(Options::ENABLE_TABLES);
     opts.insert(Options::ENABLE_FOOTNOTES);
@@ -21,7 +21,7 @@ pub fn markdown_to_html(markdown: &str, section_identifier: &str, links: &Option
 
     let mut handlers: Vec<Box<dyn EventHandler>> = vec![
         Box::new(SectionEventHandler::new(section_identifier)),
-        Box::new(HighlightEventHandler::new()),
+        Box::new(HighlightEventHandler::new(code_prefix)),
     ];
 
     if let Some(links) = links {
@@ -55,7 +55,7 @@ Hello world
 More text
 ## Another section
 # Final section"#;
-        let result = markdown_to_html(&contents, "", &None);
+        let result = markdown_to_html(&contents, "", &None, None);
         assert_eq!(result.sections.len(), 4);
         assert_eq!(result.sections[0].1, "Section 1");
     }
@@ -75,7 +75,7 @@ if let Some(x) = variable {
 }
 
 "#;
-        let result = markdown_to_html(&contents, "", &None);
+        let result = markdown_to_html(&contents, "", &None, Some("apv".to_owned()));
         // Test for the CSS classes
         assert!(result.content.contains("apvsource apvswift"));
     }
@@ -98,7 +98,7 @@ yep
                 ("yahoo", "jojo"),
                 ("drm", "jaja")
             ].iter().map(|(a, b)| (a.to_string(), b.to_string())).collect();
-        let result = markdown_to_html(&contents, "", &Some(reflinks));
+        let result = markdown_to_html(&contents, "", &Some(reflinks), None);
         // Test for the CSS classes
         println!("{}", &result.content);
         assert!(result.content.contains("hello"));
