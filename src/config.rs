@@ -43,7 +43,6 @@ dateFormat = "%Y-%m-%d"
 serverAddress = "127.0.0.1:8001"
 
 # [RSS]
-# baseURL = "http://example.com"
 # feedAddress = "/feed.rss"
 # title = "My Blog"
 # authorEmail = "john@doe.com"
@@ -394,6 +393,8 @@ outputFolder = "franz/"
 
 [RSS]
 title = "klaus"
+feedAddress = "https://example.com"
+authorEmail = "example@example.com"
 "#;
         let parsed = Config::toml(&contents, &std::path::PathBuf::from("/tmp/test.toml")).unwrap();
         assert!(parsed.rss.is_some());

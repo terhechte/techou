@@ -64,7 +64,7 @@ More text
 `printf()`
 
 more code
-``` Rust
+``` Swift
 if let Some(x) = variable {
   println!("{}", &x);
 }
@@ -72,6 +72,6 @@ if let Some(x) = variable {
 "#;
         let result = markdown_to_html(&contents, "");
         // Test for the CSS classes
-        assert!(result.content.contains("source rust"));
+        assert!(result.content.contains("apvsource apvswift"));
     }
 }
