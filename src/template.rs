@@ -71,7 +71,14 @@ impl Templates {
 
     pub fn register_url_functions(&mut self, context: &DocumentContext, config: &Config) {
         let post_urls: std::collections::BTreeMap<String, String> = context.all_posts.iter()
-            .map(|d|(d.identifier.clone(), d.slug.clone())).collect();
+            .map({ |d|
+                // FIXME: Instead, make sure all slugs always start with / ! (i.e. are absolute)
+                if let Some('/') = &d.slug.chars().nth(0) { 
+                    (d.identifier.clone(), d.slug.clone())
+                } else {
+                    (d.identifier.clone(), format!("/{}", &d.slug))
+                }
+            }).collect();
         self.tera.register_function("url_post", make_url_for(post_urls, "url_post"));
 
         let page_urls: std::collections::BTreeMap<String, String> = context.pages.iter()
