@@ -192,6 +192,15 @@ fn make_link(chapter: &ChapterInfo) -> Option<ChapterLink> {
     })
 }
 
+fn recur_update_chapter(chapters: &mut Vec<ChapterInfo>, to: ChapterLink) {
+    if chapters.is_empty() { return }
+    if chapters.last().unwrap().sub_chapters.is_empty() {
+        chapters.last_mut().unwrap().next = Some(to);
+    } else {
+        recur_update_chapter(&mut chapters.last_mut().unwrap().sub_chapters, to);
+    }
+}
+
 /// `in_folder` is the folder where the md file was loaded from. (i.e. /books/book1/ for /books/book1/summary.toml)
 /// `out_folder` is the absolute base folder for html (i.e. `/book1/` for `/book1/index.html` or `/books/book1/` for `/books/book1/index.html`)
 pub fn parse_chapter<A: AsRef<std::path::Path>, B: AsRef<std::path::Path>>(content: &str, in_folder: A, out_folder: B) -> Vec<ChapterInfo> {
@@ -225,6 +234,20 @@ pub fn parse_chapter<A: AsRef<std::path::Path>, B: AsRef<std::path::Path>>(conte
                     // the next set from the first item in the sub_chapter
                     if chapter_stack[idx].sub_chapters[uidx - 1].next.is_none() {
                         chapter_stack[idx].sub_chapters[uidx - 1].next = make_link(&chapter_stack[idx].sub_chapters[uidx]);
+                    } else {
+                        // we may have subchapters, that don't have a next yet
+                        // this recurses into the structure to find the last sub-chapter. i.e., here
+                        // - chap1
+                        //   - chap2
+                        //   - chap3
+                        //     - chap4
+                        //       -chap5
+                        //       -chap6
+                        // - chap7
+                        // it would recur up chap1, then chap3, then chap4, to identify chap6 and set chap7 as `next` of chap6
+                        if let Some(lnk) = make_link(&chapter_stack[idx].sub_chapters[uidx]) {
+                            recur_update_chapter(&mut chapter_stack[idx].sub_chapters[uidx - 1].sub_chapters, lnk);
+                        }
                     }
                 }
             },
@@ -260,6 +283,8 @@ pub fn parse_chapter<A: AsRef<std::path::Path>, B: AsRef<std::path::Path>>(conte
             }
             Event::Text(text) => {
                 chapter_stack.last_mut().map(|c|c.sub_chapters.last_mut().map(|c2| c2.name = text.to_string()));
+                let c1 = chapter_stack.len();
+                let c2 = chapter_stack.last().unwrap().sub_chapters.len();
             },
             _ => ()
         }
@@ -289,10 +314,12 @@ mod tests {
     - [Level2.2](test2/test3.md)
         - [Level3.1](test2/test3/test1.md)
         - [Level3.2](test2/test3/test2.md)
+        - [Level3.3](test2/test3/test2.md)
 - [Final](final/final.md)
+- [FFinal](final/final.md)
 "#;
         let r = parse_chapter(&content, "/home/books", "/html/book");
-        assert_eq!(r.len(), 3);
+        assert_eq!(r.len(), 4);
         assert_eq!(r[1].sub_chapters.len(), 2);
         assert_eq!(r[0].next.as_ref().unwrap().name, "Another");
         assert_eq!(r[1].next.as_ref().unwrap().name, "Level2.1");
@@ -301,6 +328,9 @@ mod tests {
         assert_eq!(r[1].sub_chapters[0].next.as_ref().unwrap().name, "Level2.2");
         assert_eq!(r[1].sub_chapters[1].parent.as_ref().unwrap().name, "Another");
         assert_eq!(r[1].sub_chapters[0].parent.as_ref().unwrap().name, "Another");
-        assert_eq!(r[2].previous.as_ref().unwrap().name, "Level3.2");
+        assert_eq!(r[2].previous.as_ref().unwrap().name, "Level3.3");
+        assert_eq!(r[1].sub_chapters[1].sub_chapters[1].next.as_ref().unwrap().name, "Level3.3");
+        assert_eq!(r[1].sub_chapters[1].sub_chapters[2].next.as_ref().unwrap().name, "Final");
+        println!("name: {}", r[1].sub_chapters[1].sub_chapters[1].next.as_ref().unwrap().name);
     }
 }
