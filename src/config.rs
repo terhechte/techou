@@ -80,6 +80,8 @@ pub struct ConfigProject {
     #[serde(default)]
     pub render_one_page_books: bool,
     #[serde(default)]
+    pub debug_instrumentation: bool,
+    #[serde(default)]
     pub code_class_prefix: Option<String>
 }
 
@@ -229,6 +231,7 @@ impl Default for ConfigProject {
             description: Default::default(),
             posts_per_index: default_posts_per_index(),
             render_one_page_books: false,
+            debug_instrumentation: false,
             code_class_prefix: None
         }
     }

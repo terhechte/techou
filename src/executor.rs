@@ -28,7 +28,7 @@ pub fn execute(ignore_errors: bool, config: &Config, cache: &BuildCache) -> Resu
 }
 
 fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
-    let mut timer = DebugTimer::begin(0);
+    let mut timer = DebugTimer::begin(0, &config);
     // Clean the old output folder, if it still exists.
     // We don't want to remove the folder, so that static servers still work
     clear_directory(&config.folders.output_folder_path())?;

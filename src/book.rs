@@ -22,7 +22,7 @@ pub struct Book {
 
 impl Book {
     pub fn new<A: AsRef<std::path::Path>>(file: A, config: &Config, cache: &crate::build_cache::BuildCache) -> Result<Book> {
-        let mut timer = DebugTimer::begin(1);
+        let mut timer = DebugTimer::begin(1, &config);
 
         let contents = slurp(&config.folders.books_folder_path().join(&file))?;
         timer.sub_step("slurp");

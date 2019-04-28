@@ -33,20 +33,23 @@ pub fn collapse_whitespace<'a>(text: &'a str) -> Cow<'a, str> {
 pub struct DebugTimer {
     main: std::time::Instant,
     sub: std::time::Instant,
-    level: i32
+    level: i32,
+    enable: bool
 }
 
 impl DebugTimer {
-    pub fn begin(level: i32) -> DebugTimer {
+    pub fn begin(level: i32, config: &crate::config::Config) -> DebugTimer {
         // the default min level is 1 so that we always get at least one `>`
         DebugTimer {
             main: std::time::Instant::now(),
             sub: std::time::Instant::now(),
-            level: level + 1
+            level: level + 1,
+            enable: config.project.debug_instrumentation
         }
     }
 
     pub fn sub_step(&mut self, name: &str) {
+        if !self.enable { return }
         for x in 0..=self.level {
             print!(">");
         }
@@ -56,6 +59,7 @@ impl DebugTimer {
     }
 
     pub fn end(self) {
+        if !self.enable { return }
         for x in 0..=self.level {
             print!(">");
         }
