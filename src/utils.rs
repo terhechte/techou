@@ -29,3 +29,38 @@ pub fn collapse_whitespace<'a>(text: &'a str) -> Cow<'a, str> {
     }
     RE.replace_all(text, " ")
 }
+
+pub struct DebugTimer {
+    main: std::time::Instant,
+    sub: std::time::Instant,
+    level: i32
+}
+
+impl DebugTimer {
+    pub fn begin(level: i32) -> DebugTimer {
+        // the default min level is 1 so that we always get at least one `>`
+        DebugTimer {
+            main: std::time::Instant::now(),
+            sub: std::time::Instant::now(),
+            level: level + 1
+        }
+    }
+
+    pub fn sub_step(&mut self, name: &str) {
+        for x in 0..=self.level {
+            print!(">");
+        }
+        let next = std::time::Instant::now();
+        println!(" {}: {:?}", name, next - self.sub);
+        self.sub = next;
+    }
+
+    pub fn end(self) {
+        for x in 0..=self.level {
+            print!(">");
+        }
+        let next = std::time::Instant::now();
+        println!(" Finish {:?}:", next - self.main);
+    }
+
+}

@@ -8,6 +8,7 @@ use crate::io_utils::slurp;
 use crate::front_matter::*;
 use crate::config::Config;
 use std::path::PathBuf;
+use crate::utils::DebugTimer;
 
 #[derive(Serialize, Debug)]
 pub struct Book {
@@ -21,12 +22,18 @@ pub struct Book {
 
 impl Book {
     pub fn new<A: AsRef<std::path::Path>>(file: A, config: &Config, cache: &crate::build_cache::BuildCache) -> Result<Book> {
+        let mut timer = DebugTimer::begin(1);
+
         let contents = slurp(&config.folders.books_folder_path().join(&file))?;
+        timer.sub_step("slurp");
+
         let (info, md) = parse_front_matter(&contents, &file, &config)?;
+        timer.sub_step("parse front matter");
         let folder = file.as_ref().parent().expect("Expect the path for the book to have a parent folder");
         let book_folder = std::path::PathBuf::from(&config.folders.books_folder_name).join(folder);
         let chapter_info = parse_chapter(md, &config.folders.books_folder_path().join(&folder),
                                          &book_folder);
+        timer.sub_step("parse_chapter");
         let chapters: Vec<Chapter> = chapter_info.into_par_iter().filter_map(|c| match c.convert(&config, &cache.clone()) {
             Ok(s) => {
                 if s.document.info.published == false {
@@ -39,6 +46,7 @@ impl Book {
                 None
             }
         }).collect();
+        timer.sub_step("finish convert");
         // A book needs chapters
         if chapters.is_empty() {
             return Err(crate::error::TechouError::Other {
@@ -53,11 +61,13 @@ impl Book {
             chapters,
             complete_book: None
         };
+        timer.sub_step("create book");
 
         if config.project.render_one_page_books {
             let complete_book = book.as_one_document(&cache);
             book.complete_book = Some(complete_book);
         }
+        timer.sub_step("render one");
 
         Ok(book)
     }
