@@ -1,3 +1,6 @@
+[Project]
+baseURL = "https://appventure.me"
+
 [Folders]
 books = ["plom/summary.md", "yon/summary.md"]
 booksFolder = "boks"
