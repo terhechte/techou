@@ -1,10 +1,11 @@
 # Changes required for 1.0
 - allow starting with --guide or --post and then only this post / guide will be re-rendered, the rest will be ignr0ed
-- instead of `format!` use proper `PathBuf` code everywhere to generate folders, slugs
+- instead of `format!` use proper `PathBuf` code everywhere to generate folders, slugs (or, define our own type for this)
 - use multi_try crate for error handling
 - expose enough functions to re-implement executor in bin
 - all documents (from guides, posts, etc) should be registered in one state,
   with their type, to easily iterate over them, say for tags Vec<(Document, DocumentType)>
+- should crash if baseURl is not set
 
 - bindings for various languages
 

@@ -28,23 +28,33 @@ pub fn execute(ignore_errors: bool, config: &Config, cache: &BuildCache) -> Resu
 
 fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
     let begin = std::time::Instant::now();
+    let mut beginn = std::time::Instant::now();
     // Clean the old output folder, if it still exists.
     // We don't want to remove the folder, so that static servers still work
     clear_directory(&config.folders.output_folder_path())?;
+    println!(">> Finish Clean: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
 
     // create a search engine
     let mut searcher = Searcher::new(&config);
 
     println!("Root folder: {:?}", &config.folders.root);
     let mut posts = documents_in_folder(&config.folders.posts_folder_path(), &config.folders.posts_folder_name, &config, &cache)?;
+    println!(">> Finish posts: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
     posts.sort_by(|a1, a2| {
         a2.info
             .created_timestamp
             .partial_cmp(&a1.info.created_timestamp)
             .unwrap()
     });
+    println!(">> Finish sort_by: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
 
     make_document_siblings(&mut posts);
+
+    println!(">> Finish make siblings: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
 
     if config.search.enable {
         for document in &posts {
@@ -52,21 +62,33 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
         }
     }
 
+    println!(">> Finish search documents: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
+
     // if we have more than 5 posts, start generating similarity
     if posts.len() >= 5 {
         // We want two similarity items for each post
         make_similarity(&mut posts, 2);
     }
 
+    println!(">> Finish similarity: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
+
     let mut template_writer = Templates::new(&config.folders.public_folder_path()).unwrap();
 
     let pages = documents_in_folder(&config.folders.pages_folder_path(), &config.folders.pages_folder_name, &config, &cache)?;
+
+    println!(">> Finish load pages: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
 
     if config.search.enable {
         for document in &pages {
             searcher.index_document(document);
         }
     }
+
+    println!(">> Finish search pages: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
 
     let books: Vec<Book> = config.folders.books.par_iter().filter_map(|filename| {
         match Book::new(&filename, &config, &cache) {
@@ -77,11 +99,23 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
             }
         }
     }).collect();
+
+    println!(">> Finish books: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
+
     let by_year = posts_by_date(&posts);
+    println!(">> Finish posts_by_date: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
     let by_keyword = posts_by_array(&posts, |p| &p.info.keywords);
+    println!(">> Finish by_keyword: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
     let by_category = posts_by_array(&posts, |p| &p.info.category);
+    println!(">> Finish by_category: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
 
     let mut all_posts: Vec<&Document> = posts.iter().collect();
+    println!(">> Finish all_posts: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
     for book in &books {
         // Temporarily awful
         for chapter in &book.chapters {
@@ -94,14 +128,21 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
             }
         }
     }
+    println!(">> Finish recursive books: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
     //let by_tag = posts_by_array(&posts, |p| &p.info.tags);
     let by_tag = posts_by_array(&all_posts, |p| &p.info.tags);
+    println!(">> Finish all posts by tag: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
 
     if config.search.enable {
         for book in &books {
             searcher.index_book(book);
         }
     }
+
+    println!(">> Finish search books: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
 
     let context = DocumentContext {
             posts: &posts,
@@ -123,11 +164,23 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
     );
 
     builder.posts(&posts)?;
+    println!(">> Finish write posts: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
     builder.pages(&pages)?;
+    println!(">> Finish write pages: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
     builder.books(&books, &config.folders.books_folder_name)?;
+    println!(">> Finish write books: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
     builder.category(&by_tag, &config.folders.tags_folder_name)?;
+    println!(">> Finish write by tag: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
     builder.category(&by_keyword, &config.folders.keywords_folder_name)?;
+    println!(">> Finish write by keyword: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
     builder.category(&by_category, &config.folders.category_folder_name)?;
+    println!(">> Finish write by cateogry: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
 
     // Write the indexed pages
     let title_fn = |index| match index {
@@ -138,6 +191,8 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
         ),
     };
     builder.indexes_paged(&posts, config.project.posts_per_index as usize, title_fn, "")?;
+    println!(">> Finish write indexed: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
 
     // Write the feed
     if let Some(rss) = &config.rss {
@@ -147,6 +202,8 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
             &rss,
             &config.project.base_url
         )?;
+        println!(">> Finish write feed: {:?}", std::time::Instant::now() - beginn);
+        beginn = std::time::Instant::now();
     }
 
     // Write the assets
@@ -155,12 +212,16 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
         &config.folders.public_folder_path(),
         &config.folders.output_folder_path(),
     )?;
+    println!(">> Finish write assets: {:?}", std::time::Instant::now() - beginn);
+    beginn = std::time::Instant::now();
 
     // Write the search index
     if config.search.enable {
         let search_contents = searcher.finalize()?;
         let search_index_output_path = config.folders.output_folder_path().join(&config.search.search_index_file);
         spit(search_index_output_path, &search_contents);
+        println!(">> Finish write search: {:?}", std::time::Instant::now() - beginn);
+        beginn = std::time::Instant::now();
     }
 
     // create a site map
@@ -183,12 +244,11 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
         }
 
         sitemap.finish();
+        println!(">> Finish sitemaps: {:?}", std::time::Instant::now() - beginn);
+        beginn = std::time::Instant::now();
     }
 
-
-
-    let end = std::time::Instant::now();
-    println!("Execution time: {:?}", end - begin);
+    println!("Execution time: {:?}", std::time::Instant::now() - begin);
 
     Ok(())
 }
