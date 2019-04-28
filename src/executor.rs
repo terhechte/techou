@@ -69,7 +69,7 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
     }
 
     let books: Vec<Book> = config.folders.books.par_iter().filter_map(|filename| {
-        match Book::new(&filename, &config) {
+        match Book::new(&filename, &config, &cache) {
             Ok(book) => Some(book),
             Err(e) =>  {
                 println!("Error generating book {}: {}", &filename, &e);
@@ -164,23 +164,27 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
     }
 
     // create a site map
-    let outfile = config.folders.output_folder_path().join("sitemap.xml");
-    let mut sitemap = SiteMap::new(outfile, &config.project.base_url);
-    for post in &all_posts {
-        sitemap.add_document(&post);
-    }
-    // FIXME: Terrible, we need a better way to handle the recusrive book structure
-    /*for book in books {
-        book.map(|chapter| {
-            sitemap.add_document(&chapter.document);
-        })
-    }*/
+    if !config.project.base_url.is_empty() {
+        let outfile = config.folders.output_folder_path().join("sitemap.xml");
+        let mut sitemap = SiteMap::new(outfile, &config.project.base_url);
+        for post in &all_posts {
+            sitemap.add_document(&post);
+        }
 
-    for page in &pages {
-        sitemap.add_document(&page);
+        // FIXME: Terrible, we need a better way to handle the recusrive book structure
+        /*for book in books {
+            book.map(|chapter| {
+                sitemap.add_document(&chapter.document);
+            })
+        }*/
+
+        for page in &pages {
+            sitemap.add_document(&page);
+        }
+
+        sitemap.finish();
     }
 
-    sitemap.finish();
 
 
     let end = std::time::Instant::now();

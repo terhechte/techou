@@ -20,14 +20,14 @@ pub struct Book {
 }
 
 impl Book {
-    pub fn new<A: AsRef<std::path::Path>>(file: A, config: &Config) -> Result<Book> {
+    pub fn new<A: AsRef<std::path::Path>>(file: A, config: &Config, cache: &crate::build_cache::BuildCache) -> Result<Book> {
         let contents = slurp(&config.folders.books_folder_path().join(&file))?;
         let (info, md) = parse_front_matter(&contents, &file, &config)?;
         let folder = file.as_ref().parent().expect("Expect the path for the book to have a parent folder");
         let book_folder = std::path::PathBuf::from(&config.folders.books_folder_name).join(folder);
         let chapter_info = parse_chapter(md, &config.folders.books_folder_path().join(&folder),
                                          &book_folder);
-        let chapters: Vec<Chapter> = chapter_info.into_par_iter().filter_map(|c| match c.convert(&config) {
+        let chapters: Vec<Chapter> = chapter_info.into_par_iter().filter_map(|c| match c.convert(&config, &cache.clone()) {
             Ok(s) => {
                 if s.document.info.published == false {
                     return None;
@@ -55,7 +55,7 @@ impl Book {
         };
 
         if config.project.render_one_page_books {
-            let complete_book = book.as_one_document();
+            let complete_book = book.as_one_document(&cache);
             book.complete_book = Some(complete_book);
         }
 
@@ -80,7 +80,7 @@ impl Book {
     /// It writes all the html together into one document with the
     /// frontMatter of the original document
     /// Then, it merges them with <h1> headlines
-    pub fn as_one_document(&self) -> Document {
+    pub fn as_one_document(&self, cache: &crate::build_cache::BuildCache) -> Document {
         let mut buffer: String = String::new();
         let mut sections: Vec<(String, String)> = Vec::new();
         Book::recursive_add(&self.chapters, &mut buffer, &mut sections);
@@ -90,14 +90,24 @@ impl Book {
         let filename = "complete_book.html";
         let slug = parent.join(&filename);
         let slug = slug.to_str().expect("Proper String");
-        Document::from_multiple(
-            buffer,
-            "",
-            slug,
-            &filename,
-            &self.info,
-            sections
-        )
+
+        let clone = cache.clone();
+        let doc = match clone.get_item(slug, &buffer) {
+            Some(e) => e,
+            None => {
+                let doc = Document::from_multiple(
+                    buffer,
+                    "",
+                    slug,
+                    &filename,
+                    &self.info,
+                    sections
+                );
+                cache.set_item(slug, &doc);
+                doc
+            }
+        };
+        return doc;
     }
 
     fn recursive_add(chapters: &Vec<Chapter>, into_buffer: &mut String, sections: &mut Vec<(String, String)>) {
@@ -154,11 +164,22 @@ pub struct ChapterInfo {
 }
 
 impl ChapterInfo {
-    fn convert(self, config: &Config) -> Result<Chapter> {
+    fn convert(self, config: &Config, cache: &crate::build_cache::BuildCache) -> Result<Chapter> {
         let contents = slurp(&self.file_url)?;
-        let mut doc = Document::new(&contents, &self.file_url, "", &config)?;
+
+        let cache_key = &self.file_url.to_str().unwrap();
+        let clone = cache.clone();
+        let mut doc = match clone.get_item(cache_key, &contents) {
+            Some(e) => e,
+            None => {
+                let doc = Document::new(&contents, &self.file_url, "", &config)?;
+                cache.set_item(cache_key, &doc);
+                doc
+            }
+        };
+
         doc.slug = self.slug.clone();
-        let chapters: Vec<Chapter> = self.sub_chapters.into_par_iter().filter_map(|c| match c.convert(&config) {
+        let chapters: Vec<Chapter> = self.sub_chapters.into_par_iter().filter_map(|c| match c.convert(&config, &cache.clone()) {
             Ok(s) =>  {
                 if s.document.info.published == false {
                     return None;
