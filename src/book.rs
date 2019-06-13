@@ -130,6 +130,9 @@ impl Book {
             into_buffer.push_str(&chapter.document.content);
             let mut cloned = chapter.document.sections.clone();
             sections.append(&mut cloned);
+            if !chapter.sub_chapters.is_empty() {
+                Book::recursive_add(&chapter.sub_chapters, into_buffer, sections);
+            }
         }
     }
 }
