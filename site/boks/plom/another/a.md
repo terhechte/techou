@@ -1,5 +1,5 @@
 [frontMatter]
-title = "The same chapter everywhere"
+title = "cntonais the link"
 tags = ["first tag", "second tag"]
 keywords = ["first keyword", "second keyword"]
 created = "2009-12-30"
@@ -8,3 +8,5 @@ published = true
 ---
 
 # Hello world-world
+
+this [is a link](rel::final/final.md)

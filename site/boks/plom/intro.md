@@ -8,3 +8,9 @@ published = true
 ---
 
 # Hello world-world
+
+the [first link is](rel::another/a.md)
+
+yeayyeah
+
+and [what is this](lnk::switch)a is this

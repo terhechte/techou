@@ -40,7 +40,7 @@ impl AsRef<Document> for Document {
 }
 
 impl Document {
-    pub fn new<A: AsRef<Path>>(contents: &str, path: A, slug_base: &str, config: &Config) -> Result<Document> {
+    pub fn new<A: AsRef<Path>>(contents: &str, path: A, slug_base: &str, config: &Config, book_html_root: Option<&str>) -> Result<Document> {
         let filename = path
             .as_ref()
             .file_name()
@@ -55,7 +55,9 @@ impl Document {
         let ParseResult { content, sections } =
             markdown_to_html(article, &identifier,
                              &config.short_links,
-            config.project.code_class_prefix.clone());
+            config.project.code_class_prefix.clone(),
+            book_html_root
+            );
         let sections = sections.into_iter().map(|(number, title)| (format!("{}-{}", &identifier, &number), title)).collect();
         Ok(Document {
             identifier,
@@ -118,7 +120,7 @@ pub fn documents_in_folder<A: AsRef<Path>>(folder: A, base: &str, config: &Confi
                 return Some(existing)
             }
 
-            let post = match Document::new(&contents, &path, &base, &config) {
+            let post = match Document::new(&contents, &path, &base, &config, None) {
                 Ok(a) => a,
                 Err(e) => {
                     println!("Invalid Format {:?}: {:?}", &path, &e);

@@ -7,7 +7,7 @@ pub use crate::parse_event_handlers::ParseResult;
 use std::collections::HashMap;
 
 // Transform the AST of the markdown to support custom markdown constructs
-pub fn markdown_to_html(markdown: &str, section_identifier: &str, links: &Option<HashMap<String, String>>, code_prefix: Option<String>) -> ParseResult {
+pub fn markdown_to_html(markdown: &str, section_identifier: &str, links: &Option<HashMap<String, String>>, code_prefix: Option<String>, book_html_root: Option<&str>) -> ParseResult {
     let mut opts = Options::empty();
     opts.insert(Options::ENABLE_TABLES);
     opts.insert(Options::ENABLE_FOOTNOTES);
@@ -25,13 +25,16 @@ pub fn markdown_to_html(markdown: &str, section_identifier: &str, links: &Option
     ];
 
     if let Some(links) = links {
-        handlers.insert(0, Box::new(LinksEventHandler::new(links)))
+        handlers.insert(0, Box::new(LinksEventHandler::new(links, book_html_root)))
     }
 
     for event in parser {
         let mut ignore_event = false;
         for handler in handlers.iter_mut() {
             ignore_event = !handler.handle(&event, &mut result, &mut events);
+            if ignore_event {
+                break;
+            }
         }
         if !ignore_event {
             events.push(event);
@@ -55,7 +58,7 @@ Hello world
 More text
 ## Another section
 # Final section"#;
-        let result = markdown_to_html(&contents, "", &None, None);
+        let result = markdown_to_html(&contents, "", &None, None, None);
         assert_eq!(result.sections.len(), 4);
         assert_eq!(result.sections[0].1, "Section 1");
     }
@@ -75,7 +78,7 @@ if let Some(x) = variable {
 }
 
 "#;
-        let result = markdown_to_html(&contents, "", &None, Some("apv".to_owned()));
+        let result = markdown_to_html(&contents, "", &None, Some("apv".to_owned()), None);
         // Test for the CSS classes
         assert!(result.content.contains("apvsource apvswift"));
     }
@@ -98,7 +101,7 @@ yep
                 ("yahoo", "jojo"),
                 ("drm", "jaja")
             ].iter().map(|(a, b)| (a.to_string(), b.to_string())).collect();
-        let result = markdown_to_html(&contents, "", &Some(reflinks), None);
+        let result = markdown_to_html(&contents, "", &Some(reflinks), None, None);
         // Test for the CSS classes
         println!("{}", &result.content);
         assert!(result.content.contains("hello"));

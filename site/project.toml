@@ -5,3 +5,6 @@ baseURL = "https://appventure.me"
 books = ["plom/summary.md", "yon/summary.md"]
 booksFolder = "boks"
 publicCopyFolders = ["js"]
+
+[Shortlinks]
+switch = "this-should-work-without-this-entry"

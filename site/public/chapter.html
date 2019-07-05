@@ -1,5 +1,8 @@
 {{ content.chapter.name }}<br/>
 
+{{ content.chapter.document.content }}
+
+
 {% for chapter in content.chapter.sub_chapters %}
 	{{ chapter.name }} :: {{ chapter.slug }}<br/>
 

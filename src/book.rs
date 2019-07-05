@@ -34,7 +34,8 @@ impl Book {
         let chapter_info = parse_chapter(md, &config.folders.books_folder_path().join(&folder),
                                          &book_folder);
         timer.sub_step("parse_chapter");
-        let chapters: Vec<Chapter> = chapter_info.into_par_iter().filter_map(|c| match c.convert(&config, &cache.clone()) {
+        let base_folder_string = folder.to_str().unwrap();
+        let chapters: Vec<Chapter> = chapter_info.into_par_iter().filter_map(|c| match c.convert(&base_folder_string, &config, &cache.clone()) {
             Ok(s) => {
                 if s.document.info.published == false {
                     return None;
@@ -177,7 +178,7 @@ pub struct ChapterInfo {
 }
 
 impl ChapterInfo {
-    fn convert(self, config: &Config, cache: &crate::build_cache::BuildCache) -> Result<Chapter> {
+    fn convert(self, in_folder: &str, config: &Config, cache: &crate::build_cache::BuildCache) -> Result<Chapter> {
         let contents = slurp(&self.file_url)?;
 
         let cache_key = &self.file_url.to_str().unwrap();
@@ -185,14 +186,14 @@ impl ChapterInfo {
         let mut doc = match clone.get_item(cache_key, &contents) {
             Some(e) => e,
             None => {
-                let doc = Document::new(&contents, &self.file_url, "", &config)?;
+                let doc = Document::new(&contents, &self.file_url, "", &config, Some(in_folder))?;
                 cache.set_item(cache_key, &doc);
                 doc
             }
         };
 
         doc.slug = self.slug.clone();
-        let chapters: Vec<Chapter> = self.sub_chapters.into_par_iter().filter_map(|c| match c.convert(&config, &cache.clone()) {
+        let chapters: Vec<Chapter> = self.sub_chapters.into_par_iter().filter_map(|c| match c.convert(&in_folder, &config, &cache.clone()) {
             Ok(s) =>  {
                 if s.document.info.published == false {
                     return None;
