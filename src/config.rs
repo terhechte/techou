@@ -81,8 +81,35 @@ pub struct ConfigProject {
     pub render_one_page_books: bool,
     #[serde(default)]
     pub debug_instrumentation: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(default, rename_all = "camelCase")]
+pub struct ConfigRenderer {
+    // The prefix to use for each entry in the class list for the syntax
+    // highlighter
     #[serde(default)]
-    pub code_class_prefix: Option<String>
+    pub syntax_highlight_code_class_prefix: Option<String>,
+    // Should code syntax be highlighted
+    #[serde(default)]
+    pub highlight_syntax: bool,
+    // Markdown table support
+    #[serde(default)]
+    pub markdown_tables: bool,
+    // Markdown footnotes support
+    #[serde(default)]
+    pub markdown_footnotes: bool
+}
+
+impl Default for ConfigRenderer {
+    fn default() -> Self {
+        ConfigRenderer {
+            syntax_highlight_code_class_prefix: None,
+            highlight_syntax: true,
+            markdown_tables: false,
+            markdown_footnotes: true
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -232,7 +259,6 @@ impl Default for ConfigProject {
             posts_per_index: default_posts_per_index(),
             render_one_page_books: false,
             debug_instrumentation: false,
-            code_class_prefix: None
         }
     }
 }
@@ -343,6 +369,10 @@ pub struct Config {
     /// Search
     #[serde(rename="Search", default)]
     pub search: ConfigSearch,
+
+    /// Rendering
+    #[serde(rename="Render", default)]
+    pub render: ConfigRenderer,
 
     /// Shortlinks
     #[serde(default, rename = "Shortlinks")]

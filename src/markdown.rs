@@ -3,14 +3,19 @@ use crate::parse_event_handlers::{
     highlight::HighlightEventHandler, section::SectionEventHandler, links::LinksEventHandler, EventHandler,
 };
 pub use crate::parse_event_handlers::ParseResult;
+use crate::config::ConfigRenderer;
 
 use std::collections::HashMap;
 
 // Transform the AST of the markdown to support custom markdown constructs
-pub fn markdown_to_html(markdown: &str, section_identifier: &str, links: &Option<HashMap<String, String>>, code_prefix: Option<String>, book_html_root: Option<&str>) -> ParseResult {
+pub fn markdown_to_html(markdown: &str, section_identifier: &str, links: &Option<HashMap<String, String>>, book_html_root: Option<&str>, config: &ConfigRenderer) -> ParseResult {
     let mut opts = Options::empty();
-    opts.insert(Options::ENABLE_TABLES);
-    opts.insert(Options::ENABLE_FOOTNOTES);
+    if config.markdown_tables {
+        opts.insert(Options::ENABLE_TABLES);
+    }
+    if config.markdown_footnotes {
+        opts.insert(Options::ENABLE_FOOTNOTES);
+    }
 
     let parser = Parser::new_ext(markdown, opts);
     let mut events: Vec<Event> = Vec::new();
@@ -20,10 +25,12 @@ pub fn markdown_to_html(markdown: &str, section_identifier: &str, links: &Option
     };
 
     let mut handlers: Vec<Box<dyn EventHandler>> = vec![
-        Box::new(SectionEventHandler::new(section_identifier)),
-        Box::new(HighlightEventHandler::new(code_prefix)),
+        Box::new(SectionEventHandler::new(section_identifier))
     ];
 
+    if config.highlight_syntax {
+        handlers.push(Box::new(HighlightEventHandler::new(&config.syntax_highlight_code_class_prefix)));
+    }
     if let Some(links) = links {
         handlers.insert(0, Box::new(LinksEventHandler::new(links, book_html_root)))
     }
@@ -51,6 +58,13 @@ mod tests {
     fn test_sections() {
         use crate::document;
         use crate::markdown::*;
+        use crate::config::ConfigRenderer;
+        let cfg = ConfigRenderer {
+            syntax_highlight_code_class_prefix: None,
+            highlight_syntax: true,
+            markdown_tables: false,
+            markdown_footnotes: true
+        };
         let contents = r#"
 # Section 1
 Hello world
@@ -58,7 +72,7 @@ Hello world
 More text
 ## Another section
 # Final section"#;
-        let result = markdown_to_html(&contents, "", &None, None, None);
+        let result = markdown_to_html(&contents, "", &None, None, &cfg);
         assert_eq!(result.sections.len(), 4);
         assert_eq!(result.sections[0].1, "Section 1");
     }
@@ -67,6 +81,13 @@ More text
     fn test_syntax() {
         use crate::document;
         use crate::markdown::*;
+        use crate::config::ConfigRenderer;
+        let cfg = ConfigRenderer {
+            syntax_highlight_code_class_prefix: Some("apv".to_owned()),
+            highlight_syntax: true,
+            markdown_tables: false,
+            markdown_footnotes: true
+        };
         let contents = r#"
 # Section 1
 `printf()`
@@ -78,7 +99,7 @@ if let Some(x) = variable {
 }
 
 "#;
-        let result = markdown_to_html(&contents, "", &None, Some("apv".to_owned()), None);
+        let result = markdown_to_html(&contents, "", &None, None, &cfg);
         // Test for the CSS classes
         assert!(result.content.contains("apvsource apvswift"));
     }
@@ -87,6 +108,13 @@ if let Some(x) = variable {
     fn test_reflinks() {
         use crate::document;
         use crate::markdown::*;
+        use crate::config::ConfigRenderer;
+        let cfg = ConfigRenderer {
+            syntax_highlight_code_class_prefix: None,
+            highlight_syntax: true,
+            markdown_tables: false,
+            markdown_footnotes: true
+        };
         let contents = r#"
 # Section 1
 [hello](lnk::yahoo)
@@ -101,7 +129,7 @@ yep
                 ("yahoo", "jojo"),
                 ("drm", "jaja")
             ].iter().map(|(a, b)| (a.to_string(), b.to_string())).collect();
-        let result = markdown_to_html(&contents, "", &Some(reflinks), None, None);
+        let result = markdown_to_html(&contents, "", &Some(reflinks), None, &cfg);
         // Test for the CSS classes
         println!("{}", &result.content);
         assert!(result.content.contains("hello"));

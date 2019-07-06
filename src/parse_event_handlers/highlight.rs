@@ -7,16 +7,16 @@ use super::*;
 use std::borrow::Cow;
 
 
-pub struct HighlightEventHandler {
+pub struct HighlightEventHandler<'a> {
     next_text_is_code: bool,
     language: String,
     current_code: String,
     syntax_set: SyntaxSet,
-    prefix: Option<String>
+    prefix: &'a Option<String>
 }
 
-impl HighlightEventHandler {
-    pub fn new(prefix: Option<String>) -> HighlightEventHandler {
+impl<'a> HighlightEventHandler<'a> {
+    pub fn new(prefix: &'a Option<String>) -> HighlightEventHandler<'a> {
         let ps = SyntaxSet::load_defaults_newlines();
         HighlightEventHandler {
             next_text_is_code: false,
@@ -28,7 +28,7 @@ impl HighlightEventHandler {
     }
 }
 
-impl EventHandler for HighlightEventHandler {
+impl<'a> EventHandler for HighlightEventHandler<'a> {
     fn handle(&mut self, event: &Event, _result: &mut ParseResult, events: &mut Vec<Event>) -> bool {
         match event {
             Event::Start(Tag::CodeBlock(ref lang)) => {

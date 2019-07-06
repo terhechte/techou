@@ -64,8 +64,8 @@ impl Document {
         let ParseResult { content, sections } =
             markdown_to_html(article, &identifier,
                              &config.short_links,
-            config.project.code_class_prefix.clone(),
-            abf
+                             abf,
+                             &config.render
             );
         let sections = sections.into_iter().map(|(number, title)| (format!("{}-{}", &identifier, &number), title)).collect();
         Ok(Document {
