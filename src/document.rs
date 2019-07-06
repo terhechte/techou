@@ -52,11 +52,20 @@ impl Document {
         let identifier = utils::hash_string(&filename, 8);
         let (info, article) = parse_front_matter(&contents, &path.as_ref(), &config)?;
         let slug = slug_from_frontmatter(&info, slug_base);
+        // I'm tired, I want this to compile. I understand the issue,
+        // I'm too tired to consider how to do this the proper way
+        let mut abb = String::new();
+        let mut abf: Option<&str> = None;
+        if let Some(x) = book_html_root {
+            abb = format!("{}/{}", &config.folders.books_folder_name, &x);
+            abf = Some(&abb);
+        }
+        //let book_abs_html_root = book_html_root.map(|(f)| format!("{}/{}", &config.folders.books_folder_name, &f).as_str());
         let ParseResult { content, sections } =
             markdown_to_html(article, &identifier,
                              &config.short_links,
             config.project.code_class_prefix.clone(),
-            book_html_root
+            abf
             );
         let sections = sections.into_iter().map(|(number, title)| (format!("{}-{}", &identifier, &number), title)).collect();
         Ok(Document {
