@@ -98,7 +98,12 @@ pub struct ConfigRenderer {
     pub markdown_tables: bool,
     // Markdown footnotes support
     #[serde(default)]
-    pub markdown_footnotes: bool
+    pub markdown_footnotes: bool,
+    // Link parsing support
+    // lnk::link-id -> replace with the id from the Shortlinks
+    // rel::link -> replace with the absolute link within the current guide root
+    #[serde(default)]
+    pub parse_links: bool
 }
 
 impl Default for ConfigRenderer {
@@ -107,7 +112,8 @@ impl Default for ConfigRenderer {
             syntax_highlight_code_class_prefix: None,
             highlight_syntax: true,
             markdown_tables: false,
-            markdown_footnotes: true
+            markdown_footnotes: true,
+            parse_links: true
         }
     }
 }

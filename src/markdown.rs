@@ -9,6 +9,7 @@ use std::collections::HashMap;
 
 // Transform the AST of the markdown to support custom markdown constructs
 pub fn markdown_to_html(markdown: &str, section_identifier: &str, links: &Option<HashMap<String, String>>, book_html_root: Option<&str>, config: &ConfigRenderer) -> ParseResult {
+    let default_hashmap: HashMap<String, String> = HashMap::new();
     let mut opts = Options::empty();
     if config.markdown_tables {
         opts.insert(Options::ENABLE_TABLES);
@@ -31,8 +32,13 @@ pub fn markdown_to_html(markdown: &str, section_identifier: &str, links: &Option
     if config.highlight_syntax {
         handlers.push(Box::new(HighlightEventHandler::new(&config.syntax_highlight_code_class_prefix)));
     }
-    if let Some(links) = links {
-        handlers.insert(0, Box::new(LinksEventHandler::new(links, book_html_root)))
+
+    if config.parse_links {
+        if let Some(links) = links {
+            handlers.insert(0, Box::new(LinksEventHandler::new(&links, book_html_root)))
+        } else {
+            handlers.insert(0, Box::new(LinksEventHandler::new(&default_hashmap, book_html_root)))
+        }
     }
 
     for event in parser {
@@ -63,7 +69,8 @@ mod tests {
             syntax_highlight_code_class_prefix: None,
             highlight_syntax: true,
             markdown_tables: false,
-            markdown_footnotes: true
+            markdown_footnotes: true,
+            parse_links: true
         };
         let contents = r#"
 # Section 1
@@ -86,7 +93,8 @@ More text
             syntax_highlight_code_class_prefix: Some("apv".to_owned()),
             highlight_syntax: true,
             markdown_tables: false,
-            markdown_footnotes: true
+            markdown_footnotes: true,
+            parse_links: true
         };
         let contents = r#"
 # Section 1
@@ -105,6 +113,26 @@ if let Some(x) = variable {
     }
 
     #[test]
+    fn test_rellinks() {
+        use crate::markdown::*;
+        use crate::config::ConfigRenderer;
+        let cfg = ConfigRenderer {
+            syntax_highlight_code_class_prefix: None,
+            highlight_syntax: true,
+            markdown_tables: false,
+            markdown_footnotes: true,
+            parse_links: true
+        };
+        let contents = r#"
+[bonjour](rel::posts/post.md)
+"#;
+        let result = markdown_to_html(&contents, "", &None, Some("book"), &cfg);
+        assert!(result.content.contains("/book/posts/post.html"));
+        let result = markdown_to_html(&contents, "", &None, None, &cfg);
+        assert!(result.content.contains("/posts/post.html"));
+    }
+
+    #[test]
     fn test_reflinks() {
         use crate::document;
         use crate::markdown::*;
@@ -113,7 +141,8 @@ if let Some(x) = variable {
             syntax_highlight_code_class_prefix: None,
             highlight_syntax: true,
             markdown_tables: false,
-            markdown_footnotes: true
+            markdown_footnotes: true,
+            parse_links: true
         };
         let contents = r#"
 # Section 1

@@ -50,13 +50,10 @@ impl<'a> EventHandler for LinksEventHandler<'a> {
                 match LinksEventHandler::detect_link_type(a) {
                     LinkType::Link => return true,
                     LinkType::RelLink(tag) => {
-                        if let Some(base) = self.base_folder {
-                            let full_path = format!("/{}/{}", &base, &tag.replace(".md", ".html"));
-                            events.push(Event::Start(Tag::Link(Cow::Owned(full_path), Cow::Owned(b.to_string()))));
-                            return false;
-                        } else {
-                            return true;
-                        }
+                        let base = self.base_folder.unwrap_or_default();
+                        let full_path = format!("/{}/{}", &base, &tag.replace(".md", ".html"));
+                        events.push(Event::Start(Tag::Link(Cow::Owned(full_path), Cow::Owned(b.to_string()))));
+                        return false;
                     },
                     LinkType::ShortLink(tag) => {
                         if let Some(link) = self.link_database.get(&format!("{}", &tag)) {
