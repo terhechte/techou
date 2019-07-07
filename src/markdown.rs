@@ -89,13 +89,8 @@ More text
         use crate::document;
         use crate::markdown::*;
         use crate::config::ConfigRenderer;
-        let cfg = ConfigRenderer {
-            syntax_highlight_code_class_prefix: Some("apv".to_owned()),
-            highlight_syntax: true,
-            markdown_tables: false,
-            markdown_footnotes: true,
-            parse_links: true
-        };
+        let mut cfg = ConfigRenderer::default();
+        cfg.syntax_highlight_code_class_prefix = Some("apv".to_owned());
         let contents = r#"
 # Section 1
 `printf()`
@@ -116,13 +111,7 @@ if let Some(x) = variable {
     fn test_rellinks() {
         use crate::markdown::*;
         use crate::config::ConfigRenderer;
-        let cfg = ConfigRenderer {
-            syntax_highlight_code_class_prefix: None,
-            highlight_syntax: true,
-            markdown_tables: false,
-            markdown_footnotes: true,
-            parse_links: true
-        };
+        let cfg = ConfigRenderer::default();
         let contents = r#"
 [bonjour](rel::posts/post.md)
 "#;
@@ -137,13 +126,7 @@ if let Some(x) = variable {
         use crate::document;
         use crate::markdown::*;
         use crate::config::ConfigRenderer;
-        let cfg = ConfigRenderer {
-            syntax_highlight_code_class_prefix: None,
-            highlight_syntax: true,
-            markdown_tables: false,
-            markdown_footnotes: true,
-            parse_links: true
-        };
+        let cfg = ConfigRenderer::default();
         let contents = r#"
 # Section 1
 [hello](lnk::yahoo)
