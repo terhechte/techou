@@ -25,9 +25,11 @@ pub fn markdown_to_html(markdown: &str, section_identifier: &str, links: &Option
         sections: Vec::new(),
     };
 
-    let mut handlers: Vec<Box<dyn EventHandler>> = vec![
-        Box::new(SectionEventHandler::new(section_identifier))
-    ];
+    let mut handlers: Vec<Box<dyn EventHandler>> = Vec::new();
+
+    if config.parse_headers {
+        handlers.push(Box::new(SectionEventHandler::new(section_identifier, &config.section_header_identifier_template)));
+    }
 
     if config.highlight_syntax {
         handlers.push(Box::new(HighlightEventHandler::new(&config.syntax_highlight_code_class_prefix)));

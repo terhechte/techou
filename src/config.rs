@@ -99,11 +99,19 @@ pub struct ConfigRenderer {
     // Markdown footnotes support
     #[serde(default)]
     pub markdown_footnotes: bool,
+    // Detect headers and generate small identifiers and a list
+    // of all headers, so that they can be listed in a sidebar
+    #[serde(default)]
+    pub parse_headers: bool,
     // Link parsing support
     // lnk::link-id -> replace with the id from the Shortlinks
     // rel::link -> replace with the absolute link within the current guide root
     #[serde(default)]
-    pub parse_links: bool
+    pub parse_links: bool,
+    // The HTML to use for the header sections that are parsed
+    // out of `h1` tags and can be used to populate a sidebar for longer articles or a toc
+    #[serde(default)]
+    pub section_header_identifier_template: String
 }
 
 impl Default for ConfigRenderer {
@@ -113,7 +121,9 @@ impl Default for ConfigRenderer {
             highlight_syntax: true,
             markdown_tables: false,
             markdown_footnotes: true,
-            parse_links: true
+            parse_headers: true,
+            parse_links: true,
+            section_header_identifier_template: "<span id=\"{identifier}-{number}\"></span>".to_owned()
         }
     }
 }
