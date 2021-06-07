@@ -6,35 +6,36 @@ use std::io;
 use std::result;
 
 
-#[derive(Debug, err_derive::Error)]
+#[derive(Debug)]
 pub enum TechouError {
-    #[error(display = "io error with {}: {}", context, source)]
     IO { source: io::Error, context: String },
 
-    #[error(display = "invalid front-matter: {:?}", issue)]
     FrontMatter { issue: String },
 
-    #[error(display = "templating error with {}: {}", context, source)]
     Templating {
         source: tera::Error,
         context: String,
     },
 
-    #[error(display = "toml error with {}: {}", context, source)]
     TOML {
         source: toml::de::Error,
         context: String,
     },
 
-    #[error(display = "other: {:?}", issue)]
     Other { issue: String },
 
-    #[error(display = "json encoding: {}: {}", context, source)]
     JSON {
         source: serde_json::error::Error,
         context: String,
     },
 }
+
+impl std::fmt::Display for TechouError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Some sort of error: {:?}", &self)
+    }
+}
+
 
 pub type Result<T> = result::Result<T, TechouError>;
 
