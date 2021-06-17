@@ -4,7 +4,7 @@ use crate::error::*;
 
 use std::ffi::OsStr;
 use std::fs::{create_dir_all, read_dir};
-use std::io::prelude::*;
+use std::io::{prelude::*, ErrorKind};
 use std::path::{Path, PathBuf};
 
 pub fn slurp<T: AsRef<Path>>(path: T) -> Result<String> {
@@ -26,14 +26,19 @@ pub fn spit<A: AsRef<Path>>(path: A, contents: &str) -> Result<()> {
     }
     let mut file = OpenOptions::new()
         .write(true)
-        .create_new(true)
+        .truncate(true)
+        .create_new(!path.exists())
         .open(&path)
         .ctx(&path)?;
     file.write_all(contents.as_bytes()).ctx(path)
 }
 
 /// Generate a folder structure based on the contents of a book summary
-pub fn generate_book_folders(config: &crate::config::Config, chapters: &Vec<crate::book::ChapterInfo>, to_folder: &PathBuf) -> Result<()> {
+pub fn generate_book_folders(
+    config: &crate::config::Config,
+    chapters: &Vec<crate::book::ChapterInfo>,
+    to_folder: &PathBuf,
+) -> Result<()> {
     for chapter in chapters {
         let date = crate::front_matter::default_date_time(&config);
         let matter = crate::front_matter::default_front_matter(&chapter.name, &date);
@@ -100,14 +105,22 @@ pub fn copy_items_to_directory<A: AsRef<Path>>(
             continue;
         };
         let target = to_dir.as_ref().join(entry);
-        println!("copy '{:?}' to '{:?}'", &source, &target);
+        //println!("copy '{:?}' to '{:?}'", &source, &target);
         // We copy each item seperately, so we can see when it fails
         match copy_dir(&source, &target) {
-            Ok(ref e) if !e.is_empty() => e.iter()
-                .for_each(|_| println!("Could not copy {:?}", &e)),
-            Err(e) => println!("Copy Error: {:?}", &e),
+            Ok(ref e) if !e.is_empty() => {
+                e.iter().for_each(|_| println!("Could not copy {:?}", &e))
+            }
+            Err(e) => match &e {
+                err @ std::io::Error { .. } => match err.kind() {
+                    ErrorKind::AlreadyExists => (),
+                    _ => println!("Copy Error: {:?}", &e),
+                },
+            },
             _ => (),
         };
+
+        //println!("Copy Error: {:?}", &e),
     }
     Ok(())
 }

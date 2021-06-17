@@ -16,16 +16,18 @@ pub fn posts_by_date<'a>(posts: &'a [Document]) -> Vec<Year<'a>> {
         .into_iter()
         .rev()
         .map(|(year, entries)| {
-            Year::from((
-                year,
-                entries.into_iter().rev().map(Month::from).collect(),
-            ))
+            Year::from((year, entries.into_iter().rev().map(Month::from).collect()))
         })
         .collect()
 }
 
-pub fn posts_by_array<'a, RetrieveFn, D: AsRef<Document>>(posts: &'a [D], retriever: RetrieveFn) -> Vec<Category<'a>>
-    where RetrieveFn: Fn(&Document) -> &[String] {
+pub fn posts_by_array<'a, RetrieveFn, D: AsRef<Document>>(
+    posts: &'a [D],
+    retriever: RetrieveFn,
+) -> Vec<Category<'a>>
+where
+    RetrieveFn: Fn(&Document) -> &[String],
+{
     let mut tag_map: BTreeMap<&'a str, Vec<&'a Document>> = BTreeMap::new();
     for post in posts {
         let post = post.as_ref();
@@ -64,7 +66,7 @@ pub fn make_document_siblings(for_documents: &mut Vec<Document>) {
     let mut iter = for_documents.iter_mut().peekable();
     while let Some(doc) = iter.next() {
         doc.previous_document = previous.take();
-        doc.next_document = iter.peek().map(|d|d.link());
+        doc.next_document = iter.peek().map(|d| d.link());
         previous = Some(doc.link());
     }
 }
@@ -187,7 +189,8 @@ this."#,
             sections: Vec::new(),
             similar_documents: Vec::new(),
             previous_document: None,
-            next_document: None
+            next_document: None,
+            updated: true,
         }
     }
 }

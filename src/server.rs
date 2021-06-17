@@ -5,7 +5,7 @@ use crate::config::Config;
 
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
-use std::time::{Duration};
+use std::time::Duration;
 
 pub fn auto_reload_code(config: &Config) -> String {
     format!(
@@ -109,6 +109,9 @@ struct AppState {
 }
 
 pub fn run_file_server(reload_receiver: Option<Receiver<bool>>, config: &Config) {
+    loop {
+        std::thread::sleep(Duration::from_secs(1));
+    }
     //let sys = actix::System::new("techou");
 
     //let folder = config

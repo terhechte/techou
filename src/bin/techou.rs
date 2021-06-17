@@ -79,7 +79,8 @@ fn main() {
                 &path
             );
         }
-        techou::io_utils::spit(&path, techou::config::Config::example_config()).expect("Expect to write config");
+        techou::io_utils::spit(&path, techou::config::Config::example_config())
+            .expect("Expect to write config");
         println!("New Config '{:?}' created.", &path);
         ::std::process::exit(0);
     }
@@ -94,19 +95,24 @@ fn main() {
 
     // If we have the task to scaffold a book structure, we do that
     if let Some(matches) = matches.subcommand_matches("scaffold-book") {
-        let scaffold_file = matches.value_of("filename").expect("Expecting path summary.toml scaffold file");
+        let scaffold_file = matches
+            .value_of("filename")
+            .expect("Expecting path summary.toml scaffold file");
         let path = std::path::PathBuf::from(&scaffold_file);
-        let folder = path.parent().expect("Expecting parent folder for scaffold file");
+        let folder = path
+            .parent()
+            .expect("Expecting parent folder for scaffold file");
         // we change the book folder to nothing, as in this case we just use the current folder
 
         let contents = match techou::io_utils::slurp(&path) {
-            Ok(s) => s, Err(e) => panic!("Error Reading {:?}: {:?}", &path, &e),
+            Ok(s) => s,
+            Err(e) => panic!("Error Reading {:?}: {:?}", &path, &e),
         };
         let chapters = techou::book::parse_chapter(&contents, &folder, "");
         let path_buf = folder.to_path_buf();
         match techou::io_utils::generate_book_folders(&config, &chapters, &path_buf) {
             Ok(_) => (),
-            Err(e) => panic!("Could not generate folders: {}", &e)
+            Err(e) => panic!("Could not generate folders: {}", &e),
         };
         println!("Done.");
         ::std::process::exit(0);
@@ -114,12 +120,13 @@ fn main() {
 
     // If the server is on, the user is debugging, and we perform the auto reload
     config.server.auto_reload_browser_via_websocket_on_change = should_serve;
+    config.project.fast_render = should_watch;
 
     if let Some(_matches) = matches.subcommand_matches("new") {
         techou::new_post::interactive(&config);
     }
 
-    let cache = techou::build_cache::BuildCache::new();
+    let cache = techou::build_cache::BuildCache::new("buildcache.techou");
     let load_fn = move |_path: &path::Path, config: &techou::config::Config| {
         let cache_clone = cache.clone();
         match techou::executor::execute(false, &config, &cache_clone) {
@@ -155,7 +162,9 @@ fn main() {
             paths.push(path::PathBuf::from(&project_file));
         }
         Some(techou::reload::reload(paths, &config, load_fn))
-    } else { None };
+    } else {
+        None
+    };
 
     if should_serve {
         techou::server::run_file_server(reload_receiver, &config);

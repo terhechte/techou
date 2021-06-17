@@ -1,8 +1,8 @@
 use rayon::prelude::*;
 
+use crate::book::{Book, Chapter};
 use crate::config::Config;
 use crate::document::Document;
-use crate::book::{Book, Chapter};
 use crate::error::Result;
 use crate::list::*;
 use crate::template::Templates;
@@ -54,17 +54,17 @@ impl<'a> Builder<'a> {
     /// If `html/posts` is your output folder / posts folder, then `posts` would be
     /// the correct value for `folder`
     pub fn posts(&self, posts: &[Document]) -> Result<()> {
-        let folder = self
-            .config
-            .folders
-            .output_folder_path();
+        let folder = self.config.folders.output_folder_path();
         posts.par_iter().for_each(|post| {
+            if post.updated == false {
+                return;
+            }
             let path = folder.nonAdjoinedPush(&post.slug);
             match self
                 .template_writer
                 .write_post(&self.context, &post, &path, &self.config)
             {
-                Ok(_) => () /*println!("Wrote '{:?}'", &path)*/,
+                Ok(_) => (), /*println!("Wrote '{:?}'", &path)*/
                 Err(e) => println!("Could not write article {}: {:?}", &post.filename, &e),
             }
         });
@@ -72,17 +72,17 @@ impl<'a> Builder<'a> {
     }
 
     pub fn pages(&self, pages: &[Document]) -> Result<()> {
-        let folder = self
-            .config
-            .folders
-            .output_folder_path();
+        let folder = self.config.folders.output_folder_path();
         pages.par_iter().for_each(|page| {
+            if page.updated == false {
+                return;
+            }
             let path = folder.nonAdjoinedPush(&page.slug);
             match self
                 .template_writer
                 .write_page(&self.context, &page, &path, &self.config)
             {
-                Ok(_) => () /*println!("Wrote '{:?}'", &path)*/,
+                Ok(_) => (), /*println!("Wrote '{:?}'", &path)*/
                 Err(e) => println!("Could not write article {}: {:?}", &page.filename, &e),
             }
         });
@@ -91,6 +91,9 @@ impl<'a> Builder<'a> {
 
     /// Write all the posts into one long index file.
     pub fn index<A: AsRef<Path>>(&self, posts: &[Document], folder: A) -> Result<()> {
+        if posts.iter().all(|d| d.updated == false) {
+            return Ok(());
+        }
         let folder = self
             .config
             .folders
@@ -112,7 +115,7 @@ impl<'a> Builder<'a> {
             &path,
             &self.config,
         ) {
-            Ok(_) => () /*println!("Wrote index: {:?}", &path)*/,
+            Ok(_) => (), /*println!("Wrote index: {:?}", &path)*/
             Err(e) => println!("Could not write index {:?}: {:?}", &path, &e),
         };
         Ok(())
@@ -132,6 +135,9 @@ impl<'a> Builder<'a> {
     where
         TitleFn: Fn(usize) -> (String, String),
     {
+        if posts.iter().all(|d| d.updated == false) {
+            return Ok(());
+        }
         let folder = self
             .config
             .folders
@@ -140,7 +146,6 @@ impl<'a> Builder<'a> {
         let mut state: (Option<Page>, Option<Page>) = (None, None);
         let mut iter = posts.chunks(per_page).enumerate().peekable();
         while let Some((index, chunk)) = iter.next() {
-
             let (filename, title) = make_title(index);
 
             let (_, future_title) = make_title(index + 1);
@@ -148,7 +153,7 @@ impl<'a> Builder<'a> {
                 title: future_title,
                 index: *index,
                 items: chunk.len(),
-                path: filename.clone()
+                path: filename.clone(),
             });
 
             let pagination = Pagination {
@@ -170,7 +175,7 @@ impl<'a> Builder<'a> {
                 &path,
                 &self.config,
             ) {
-                Ok(_) => () /*println!("Wrote index: {:?}", &path)*/,
+                Ok(_) => (), /*println!("Wrote index: {:?}", &path)*/
                 Err(e) => println!("Could not write index {:?}: {:?}", &path, &e),
             }
             state.1 = Some(Page {
@@ -208,7 +213,7 @@ impl<'a> Builder<'a> {
                 &path,
                 &self.config,
             ) {
-                Ok(_) => () /*println!("Wrote tag index: {:?}", &path)*/ ,
+                Ok(_) => (), /*println!("Wrote tag index: {:?}", &path)*/
                 Err(e) => println!("Could not write index {:?}: {:?}", &path, &e),
             };
         }
@@ -233,17 +238,29 @@ impl<'a> Builder<'a> {
             match self
                 .template_writer
                 .write_book(&self.context, &book, &path, &self.config)
-                {
-                    Ok(_) => () /*println!("Wrote '{:?}'", &path)*/,
-                    Err(e) => println!("Could not write book {}: {:?}", &book.identifier, &e),
-                }
+            {
+                Ok(_) => (), /*println!("Wrote '{:?}'", &path)*/
+                Err(e) => println!("Could not write book {}: {:?}", &book.identifier, &e),
+            }
 
             // If we have the book as one document, write that out
             if let Some(ref whole_book) = book.complete_book {
-                let path = &self.config.folders.output_folder_path().join(&whole_book.slug);
-                match self.template_writer.write_post(&self.context, whole_book, &path, &self.config) {
+                let path = &self
+                    .config
+                    .folders
+                    .output_folder_path()
+                    .join(&whole_book.slug);
+                match self.template_writer.write_post(
+                    &self.context,
+                    whole_book,
+                    &path,
+                    &self.config,
+                ) {
                     Ok(_) => (),
-                    Err(e) => println!("Could not write whole book {}: {:?} {:?}", &whole_book.identifier, &path, &e)
+                    Err(e) => println!(
+                        "Could not write whole book {}: {:?} {:?}",
+                        &whole_book.identifier, &path, &e
+                    ),
                 }
             }
         });
@@ -252,11 +269,20 @@ impl<'a> Builder<'a> {
 
     pub fn chapter(&self, book: &Book, chapters: &[Chapter]) -> Result<()> {
         for chapter in chapters {
-            let output_path = std::path::PathBuf::from(&self.config.folders.output_folder).join(&chapter.slug);
-            match self.template_writer.write_chapter(&self.context, &book, &chapter, &output_path, &self.config) {
-                Ok(_) => () /*println!("write chapter to: {:?}", &chapter.slug)*/,
-                Err(e) => println!("Could not write {}: {}", &chapter.name, &e)
-            };
+            if chapter.document.updated {
+                let output_path = std::path::PathBuf::from(&self.config.folders.output_folder)
+                    .join(&chapter.slug);
+                match self.template_writer.write_chapter(
+                    &self.context,
+                    &book,
+                    &chapter,
+                    &output_path,
+                    &self.config,
+                ) {
+                    Ok(_) => (), /*println!("write chapter to: {:?}", &chapter.slug)*/
+                    Err(e) => println!("Could not write {}: {}", &chapter.name, &e),
+                };
+            }
             if !chapter.sub_chapters.is_empty() {
                 self.chapter(&book, &chapter.sub_chapters)?;
             }

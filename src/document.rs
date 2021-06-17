@@ -1,24 +1,24 @@
 use chrono::Datelike;
 use rayon::prelude::*;
-use serde_derive::Serialize;
+use serde_derive::{Deserialize, Serialize};
 
 use crate::config::Config;
 use crate::error::{Result, TechouError};
 use crate::front_matter::{parse_front_matter, FrontMatter};
-use crate::utils;
 use crate::markdown::*;
+use crate::utils;
 
 use std::path::Path;
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DocumentLink {
     pub identifier: String,
     pub title: String,
     pub desc: String,
-    pub slug: String
+    pub slug: String,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Document {
     pub identifier: String,
     pub filename: String,
@@ -29,7 +29,8 @@ pub struct Document {
     pub sections: Vec<(String, String)>,
     pub similar_documents: Vec<(u32, DocumentLink)>,
     pub previous_document: Option<DocumentLink>,
-    pub next_document: Option<DocumentLink>
+    pub next_document: Option<DocumentLink>,
+    pub updated: bool,
 }
 
 impl AsRef<Document> for Document {
@@ -40,7 +41,13 @@ impl AsRef<Document> for Document {
 }
 
 impl Document {
-    pub fn new<A: AsRef<Path>>(contents: &str, path: A, slug_base: &str, config: &Config, book_html_root: Option<&str>) -> Result<Document> {
+    pub fn new<A: AsRef<Path>>(
+        contents: &str,
+        path: A,
+        slug_base: &str,
+        config: &Config,
+        book_html_root: Option<&str>,
+    ) -> Result<Document> {
         let filename = path
             .as_ref()
             .file_name()
@@ -52,14 +59,19 @@ impl Document {
         let identifier = utils::hash_string(&filename, 8);
         let (info, article) = parse_front_matter(&contents, &path.as_ref(), &config)?;
         let slug = slug_from_frontmatter(&info, slug_base);
-        let formatted_root = book_html_root.map(|value| format!("{}/{}", &config.folders.books_folder_name, &value));
-        let ParseResult { content, sections } =
-            markdown_to_html(article, &identifier,
-                             &config.short_links,
-                             formatted_root.as_ref().map(String::as_str),
-                             &config.render
-            );
-        let sections = sections.into_iter().map(|(number, title)| (format!("{}-{}", &identifier, &number), title)).collect();
+        let formatted_root =
+            book_html_root.map(|value| format!("{}/{}", &config.folders.books_folder_name, &value));
+        let ParseResult { content, sections } = markdown_to_html(
+            article,
+            &identifier,
+            &config.short_links,
+            formatted_root.as_ref().map(String::as_str),
+            &config.render,
+        );
+        let sections = sections
+            .into_iter()
+            .map(|(number, title)| (format!("{}-{}", &identifier, &number), title))
+            .collect();
         Ok(Document {
             identifier,
             filename,
@@ -70,11 +82,19 @@ impl Document {
             sections,
             similar_documents: Vec::new(),
             next_document: None,
-            previous_document: None
+            previous_document: None,
+            updated: true,
         })
     }
 
-    pub fn from_multiple(html_contents: String, partial_markdown_contents: &str, slug: &str, filename: &str, info: &FrontMatter, sections: Vec<(String, String)>) -> Document {
+    pub fn from_multiple(
+        html_contents: String,
+        partial_markdown_contents: &str,
+        slug: &str,
+        filename: &str,
+        info: &FrontMatter,
+        sections: Vec<(String, String)>,
+    ) -> Document {
         Document {
             identifier: utils::hash_string(&slug, 4),
             filename: filename.to_string(),
@@ -85,7 +105,8 @@ impl Document {
             sections: sections,
             similar_documents: Vec::new(),
             next_document: None,
-            previous_document: None
+            previous_document: None,
+            updated: true,
         }
     }
 }
@@ -96,12 +117,17 @@ impl Document {
             identifier: self.identifier.clone(),
             title: self.info.title.clone(),
             desc: self.info.description.clone(),
-            slug: self.slug.clone()
+            slug: self.slug.clone(),
         }
     }
 }
 
-pub fn documents_in_folder<A: AsRef<Path>>(folder: A, base: &str, config: &Config, cache: &crate::build_cache::BuildCache) -> Result<Vec<Document>> {
+pub fn documents_in_folder<A: AsRef<Path>>(
+    folder: A,
+    base: &str,
+    config: &Config,
+    cache: &crate::build_cache::BuildCache,
+) -> Result<Vec<Document>> {
     use crate::io_utils::{contents_of_directory, slurp};
     let files = contents_of_directory(folder.as_ref(), "md")?;
     let posts: Vec<Document> = files
@@ -117,8 +143,9 @@ pub fn documents_in_folder<A: AsRef<Path>>(folder: A, base: &str, config: &Confi
 
             let clone = cache.clone();
             let cache_key = &path.to_str().unwrap();
-            if let Some(existing) = clone.get_item(cache_key, &contents) {
-                return Some(existing)
+            if let Some(mut existing) = clone.get_item(cache_key, &contents) {
+                existing.updated = false;
+                return Some(existing);
             }
 
             let post = match Document::new(&contents, &path, &base, &config, None) {
@@ -145,7 +172,14 @@ fn slug_from_frontmatter(front_matter: &FrontMatter, slug_base: &str) -> String 
     // make lowercase ascii-only title
     let title = utils::slugify(&front_matter.title);
     let d = &front_matter.date;
-    format!("/{}/{}-{}-{}-{}.html", slug_base, d.year(), d.month(), d.day(), title)
+    format!(
+        "/{}/{}-{}-{}-{}.html",
+        slug_base,
+        d.year(),
+        d.month(),
+        d.day(),
+        title
+    )
 }
 
 #[cfg(test)]

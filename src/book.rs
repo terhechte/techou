@@ -1,14 +1,14 @@
-use rayon::prelude::*;
 use pulldown_cmark::{Event, Parser, Tag};
+use rayon::prelude::*;
 use serde_derive::Serialize;
 
+use crate::config::Config;
 use crate::document::Document;
 use crate::error::Result;
-use crate::io_utils::slurp;
 use crate::front_matter::*;
-use crate::config::Config;
-use std::path::PathBuf;
+use crate::io_utils::slurp;
 use crate::utils::DebugTimer;
+use std::path::PathBuf;
 
 #[derive(Serialize, Debug)]
 pub struct Book {
@@ -17,11 +17,15 @@ pub struct Book {
     pub folder: String,
     pub info: FrontMatter,
     pub chapters: Vec<Chapter>,
-    pub complete_book: Option<Document>
+    pub complete_book: Option<Document>,
 }
 
 impl Book {
-    pub fn new<A: AsRef<std::path::Path>>(file: A, config: &Config, cache: &crate::build_cache::BuildCache) -> Result<Book> {
+    pub fn new<A: AsRef<std::path::Path>>(
+        file: A,
+        config: &Config,
+        cache: &crate::build_cache::BuildCache,
+    ) -> Result<Book> {
         let mut timer = DebugTimer::begin(1, &config);
 
         let contents = slurp(&config.folders.books_folder_path().join(&file))?;
@@ -29,38 +33,55 @@ impl Book {
 
         let (info, md) = parse_front_matter(&contents, &file, &config)?;
         timer.sub_step("parse front matter");
-        let folder = file.as_ref().parent().expect("Expect the path for the book to have a parent folder");
+        let folder = file
+            .as_ref()
+            .parent()
+            .expect("Expect the path for the book to have a parent folder");
         let book_folder = std::path::PathBuf::from(&config.folders.books_folder_name).join(folder);
-        let chapter_info = parse_chapter(md, &config.folders.books_folder_path().join(&folder),
-                                         &book_folder);
+        let chapter_info = parse_chapter(
+            md,
+            &config.folders.books_folder_path().join(&folder),
+            &book_folder,
+        );
         timer.sub_step("parse_chapter");
         let base_folder_string = folder.to_str().unwrap();
-        let chapters: Vec<Chapter> = chapter_info.into_par_iter().filter_map(|c| match c.convert(&base_folder_string, &config, &cache.clone()) {
-            Ok(s) => {
-                if s.document.info.published == false {
-                    return None;
-                }
-                Some(s)
-            },
-            Err(e) => {
-                println!("{:?}", &e);
-                None
-            }
-        }).collect();
+        let chapters: Vec<Chapter> = chapter_info
+            .into_par_iter()
+            .filter_map(
+                |c| match c.convert(&base_folder_string, &config, &cache.clone()) {
+                    Ok(s) => {
+                        if s.document.info.published == false {
+                            return None;
+                        }
+                        Some(s)
+                    }
+                    Err(e) => {
+                        println!("{:?}", &e);
+                        None
+                    }
+                },
+            )
+            .collect();
         timer.sub_step("finish convert");
         // A book needs chapters
         if chapters.is_empty() {
             return Err(crate::error::TechouError::Other {
-                issue: format!("Empty book {} will not be included", &info.title)
+                issue: format!("Empty book {} will not be included", &info.title),
             });
         }
         let mut book = Book {
             identifier: format!("{:?}", file.as_ref()),
             slug: chapters[0].slug.clone(),
-            folder: file.as_ref().parent().expect("Proper book path").to_str().expect("Proper book path").to_string(),
+            folder: file
+                .as_ref()
+                .parent()
+                .expect("Proper book path")
+                .to_str()
+                .expect("Proper book path")
+                .to_string(),
             info,
             chapters,
-            complete_book: None
+            complete_book: None,
         };
         timer.sub_step("create book");
 
@@ -74,12 +95,16 @@ impl Book {
     }
 
     pub fn map<Action>(&self, action: Action)
-        where Action: Fn(&Chapter) {
+    where
+        Action: Fn(&Chapter),
+    {
         Book::map_recursive(&self.chapters, &action);
     }
 
     fn map_recursive<Action>(chapters: &[Chapter], action: &Action)
-        where Action: Fn(&Chapter) {
+    where
+        Action: Fn(&Chapter),
+    {
         for chapter in chapters {
             action(chapter);
             Book::map_recursive(&chapter.sub_chapters, &action);
@@ -106,14 +131,8 @@ impl Book {
         let doc = match clone.get_item(slug, &buffer) {
             Some(e) => e,
             None => {
-                let doc = Document::from_multiple(
-                    buffer,
-                    "",
-                    slug,
-                    &filename,
-                    &self.info,
-                    sections
-                );
+                let doc =
+                    Document::from_multiple(buffer, "", slug, &filename, &self.info, sections);
                 cache.set_item(slug, &doc);
                 doc
             }
@@ -121,7 +140,11 @@ impl Book {
         return doc;
     }
 
-    fn recursive_add(chapters: &Vec<Chapter>, into_buffer: &mut String, sections: &mut Vec<(String, String)>) {
+    fn recursive_add(
+        chapters: &Vec<Chapter>,
+        into_buffer: &mut String,
+        sections: &mut Vec<(String, String)>,
+    ) {
         //let mut counter = 1;
         for chapter in chapters.iter() {
             // This is not needed as chapters always start with their name anyway
@@ -141,7 +164,7 @@ impl Book {
 #[derive(Serialize, Debug, Clone)]
 pub struct ChapterLink {
     pub name: String,
-    pub slug: String
+    pub slug: String,
 }
 
 #[derive(Serialize, Debug)]
@@ -154,7 +177,7 @@ pub struct Chapter {
     pub sub_chapters: Vec<Chapter>,
     pub next: Option<ChapterLink>,
     pub previous: Option<ChapterLink>,
-    pub parent: Option<ChapterLink>
+    pub parent: Option<ChapterLink>,
 }
 
 #[derive(Default, Debug)]
@@ -174,17 +197,25 @@ pub struct ChapterInfo {
     // The slug of the previosu chapter
     pub previous: Option<ChapterLink>,
     // The slug of the parent chapter
-    pub parent: Option<ChapterLink>
+    pub parent: Option<ChapterLink>,
 }
 
 impl ChapterInfo {
-    fn convert(self, in_folder: &str, config: &Config, cache: &crate::build_cache::BuildCache) -> Result<Chapter> {
+    fn convert(
+        self,
+        in_folder: &str,
+        config: &Config,
+        cache: &crate::build_cache::BuildCache,
+    ) -> Result<Chapter> {
         let contents = slurp(&self.file_url)?;
 
         let cache_key = &self.file_url.to_str().unwrap();
         let clone = cache.clone();
         let mut doc = match clone.get_item(cache_key, &contents) {
-            Some(e) => e,
+            Some(mut e) => {
+                e.updated = false;
+                e
+            }
             None => {
                 let doc = Document::new(&contents, &self.file_url, "", &config, Some(in_folder))?;
                 cache.set_item(cache_key, &doc);
@@ -193,18 +224,22 @@ impl ChapterInfo {
         };
 
         doc.slug = self.slug.clone();
-        let chapters: Vec<Chapter> = self.sub_chapters.into_par_iter().filter_map(|c| match c.convert(&in_folder, &config, &cache.clone()) {
-            Ok(s) =>  {
-                if s.document.info.published == false {
-                    return None;
+        let chapters: Vec<Chapter> = self
+            .sub_chapters
+            .into_par_iter()
+            .filter_map(|c| match c.convert(&in_folder, &config, &cache.clone()) {
+                Ok(s) => {
+                    if s.document.info.published == false {
+                        return None;
+                    }
+                    Some(s)
                 }
-                Some(s)
-            },
-            Err(e) => {
-                println!("{:?}", &e);
-                None
-            }
-        }).collect();
+                Err(e) => {
+                    println!("{:?}", &e);
+                    None
+                }
+            })
+            .collect();
         Ok(Chapter {
             name: self.name,
             slug: self.slug,
@@ -214,7 +249,7 @@ impl ChapterInfo {
             sub_chapters: chapters,
             previous: self.previous,
             next: self.next,
-            parent: self.parent
+            parent: self.parent,
         })
     }
 }
@@ -228,7 +263,9 @@ fn make_link(chapter: &ChapterInfo) -> Option<ChapterLink> {
 }
 
 fn recur_update_chapter(chapters: &mut Vec<ChapterInfo>, to: ChapterLink) {
-    if chapters.is_empty() { return }
+    if chapters.is_empty() {
+        return;
+    }
     if chapters.last().unwrap().sub_chapters.is_empty() {
         chapters.last_mut().unwrap().next = Some(to);
     } else {
@@ -238,7 +275,11 @@ fn recur_update_chapter(chapters: &mut Vec<ChapterInfo>, to: ChapterLink) {
 
 /// `in_folder` is the folder where the md file was loaded from. (i.e. /books/book1/ for /books/book1/summary.toml)
 /// `out_folder` is the absolute base folder for html (i.e. `/book1/` for `/book1/index.html` or `/books/book1/` for `/books/book1/index.html`)
-pub fn parse_chapter<A: AsRef<std::path::Path>, B: AsRef<std::path::Path>>(content: &str, in_folder: A, out_folder: B) -> Vec<ChapterInfo> {
+pub fn parse_chapter<A: AsRef<std::path::Path>, B: AsRef<std::path::Path>>(
+    content: &str,
+    in_folder: A,
+    out_folder: B,
+) -> Vec<ChapterInfo> {
     // A non-recursive parsing of a tree data structure
     let mut parser = Parser::new(&content);
     let mut chapter_stack: Vec<ChapterInfo> = vec![Default::default()];
@@ -249,8 +290,10 @@ pub fn parse_chapter<A: AsRef<std::path::Path>, B: AsRef<std::path::Path>>(conte
                 let mut chapter: ChapterInfo = Default::default();
                 chapter.level = chapter_stack.len();
                 chapter.previous = last_chapter_link.clone();
-                chapter_stack.last_mut().map(|c| c.sub_chapters.push(chapter));
-            },
+                chapter_stack
+                    .last_mut()
+                    .map(|c| c.sub_chapters.push(chapter));
+            }
             Event::End(Tag::Item) => {
                 // We always have at least one in the stack, so this will never underflow
                 let idx = chapter_stack.len() - 1;
@@ -268,7 +311,8 @@ pub fn parse_chapter<A: AsRef<std::path::Path>, B: AsRef<std::path::Path>>(conte
                     // if we already have a next, then don't set it. Otherwise we would override
                     // the next set from the first item in the sub_chapter
                     if chapter_stack[idx].sub_chapters[uidx - 1].next.is_none() {
-                        chapter_stack[idx].sub_chapters[uidx - 1].next = make_link(&chapter_stack[idx].sub_chapters[uidx]);
+                        chapter_stack[idx].sub_chapters[uidx - 1].next =
+                            make_link(&chapter_stack[idx].sub_chapters[uidx]);
                     } else {
                         // we may have subchapters, that don't have a next yet
                         // this recurses into the structure to find the last sub-chapter. i.e., here
@@ -281,11 +325,14 @@ pub fn parse_chapter<A: AsRef<std::path::Path>, B: AsRef<std::path::Path>>(conte
                         // - chap7
                         // it would recur up chap1, then chap3, then chap4, to identify chap6 and set chap7 as `next` of chap6
                         if let Some(lnk) = make_link(&chapter_stack[idx].sub_chapters[uidx]) {
-                            recur_update_chapter(&mut chapter_stack[idx].sub_chapters[uidx - 1].sub_chapters, lnk);
+                            recur_update_chapter(
+                                &mut chapter_stack[idx].sub_chapters[uidx - 1].sub_chapters,
+                                lnk,
+                            );
                         }
                     }
                 }
-            },
+            }
             Event::Start(Tag::List(_)) => {
                 if let Some(cur) = chapter_stack.last_mut() {
                     if let Some(sb) = cur.sub_chapters.pop() {
@@ -293,12 +340,13 @@ pub fn parse_chapter<A: AsRef<std::path::Path>, B: AsRef<std::path::Path>>(conte
                     }
                 }
             }
-            Event::End(Tag::List(_)) if chapter_stack.len() > 1 =>
+            Event::End(Tag::List(_)) if chapter_stack.len() > 1 => {
                 if let Some(mut chapter) = chapter_stack.pop() {
                     if let Some(sb) = chapter_stack.last_mut() {
                         sb.sub_chapters.push(chapter);
                     }
-                },
+                }
+            }
             Event::Start(Tag::Link(url, _)) => {
                 let path = out_folder.as_ref().join(&url.to_string());
                 // FIXME: Set out_folder + url as slug for chapter_stack.last
@@ -308,7 +356,7 @@ pub fn parse_chapter<A: AsRef<std::path::Path>, B: AsRef<std::path::Path>>(conte
                         c2.file_url = in_folder.as_ref().join(&url.to_string());
                     })
                 });
-            },
+            }
             Event::End(Tag::Link(url, _)) => {
                 if let Some(item) = chapter_stack.last() {
                     if let Some(inner) = item.sub_chapters.last() {
@@ -317,11 +365,15 @@ pub fn parse_chapter<A: AsRef<std::path::Path>, B: AsRef<std::path::Path>>(conte
                 }
             }
             Event::Text(text) => {
-                chapter_stack.last_mut().map(|c|c.sub_chapters.last_mut().map(|c2| c2.name = text.to_string()));
+                chapter_stack.last_mut().map(|c| {
+                    c.sub_chapters
+                        .last_mut()
+                        .map(|c2| c2.name = text.to_string())
+                });
                 let c1 = chapter_stack.len();
                 let c2 = chapter_stack.last().unwrap().sub_chapters.len();
-            },
-            _ => ()
+            }
+            _ => (),
         }
     }
     if chapter_stack.is_empty() {
@@ -359,13 +411,43 @@ mod tests {
         assert_eq!(r[0].next.as_ref().unwrap().name, "Another");
         assert_eq!(r[1].next.as_ref().unwrap().name, "Level2.1");
         assert_eq!(r[1].previous.as_ref().unwrap().name, "Intro");
-        assert_eq!(r[1].sub_chapters[0].previous.as_ref().unwrap().name, "Another");
+        assert_eq!(
+            r[1].sub_chapters[0].previous.as_ref().unwrap().name,
+            "Another"
+        );
         assert_eq!(r[1].sub_chapters[0].next.as_ref().unwrap().name, "Level2.2");
-        assert_eq!(r[1].sub_chapters[1].parent.as_ref().unwrap().name, "Another");
-        assert_eq!(r[1].sub_chapters[0].parent.as_ref().unwrap().name, "Another");
+        assert_eq!(
+            r[1].sub_chapters[1].parent.as_ref().unwrap().name,
+            "Another"
+        );
+        assert_eq!(
+            r[1].sub_chapters[0].parent.as_ref().unwrap().name,
+            "Another"
+        );
         assert_eq!(r[2].previous.as_ref().unwrap().name, "Level3.3");
-        assert_eq!(r[1].sub_chapters[1].sub_chapters[1].next.as_ref().unwrap().name, "Level3.3");
-        assert_eq!(r[1].sub_chapters[1].sub_chapters[2].next.as_ref().unwrap().name, "Final");
-        println!("name: {}", r[1].sub_chapters[1].sub_chapters[1].next.as_ref().unwrap().name);
+        assert_eq!(
+            r[1].sub_chapters[1].sub_chapters[1]
+                .next
+                .as_ref()
+                .unwrap()
+                .name,
+            "Level3.3"
+        );
+        assert_eq!(
+            r[1].sub_chapters[1].sub_chapters[2]
+                .next
+                .as_ref()
+                .unwrap()
+                .name,
+            "Final"
+        );
+        println!(
+            "name: {}",
+            r[1].sub_chapters[1].sub_chapters[1]
+                .next
+                .as_ref()
+                .unwrap()
+                .name
+        );
     }
 }

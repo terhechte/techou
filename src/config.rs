@@ -7,7 +7,6 @@ use std::collections::HashMap;
 use std::env;
 use std::path::PathBuf;
 
-
 static DEFAULT_PROJECT_TOML: &str = r#"
 [Project]
 keywords = ["nam", "nom", "grah"]
@@ -81,6 +80,10 @@ pub struct ConfigProject {
     pub render_one_page_books: bool,
     #[serde(default)]
     pub debug_instrumentation: bool,
+    // Fast rendering means we don't write tags, archives, search indexes etc.
+    // just the necessary stuff required to work on an article
+    #[serde(default)]
+    pub fast_render: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -111,7 +114,11 @@ pub struct ConfigRenderer {
     // The HTML to use for the header sections that are parsed
     // out of `h1` tags and can be used to populate a sidebar for longer articles or a toc
     #[serde(default)]
-    pub section_header_identifier_template: String
+    pub section_header_identifier_template: String,
+    /// If this is true, we save the buildcache to disk
+    /// The filename will be `buildcache.techou`
+    #[serde(default)]
+    pub store_build_cache: bool,
 }
 
 impl Default for ConfigRenderer {
@@ -123,7 +130,9 @@ impl Default for ConfigRenderer {
             markdown_footnotes: true,
             parse_headers: true,
             parse_links: true,
-            section_header_identifier_template: "<span id=\"{identifier}-{number}\"></span>".to_owned()
+            section_header_identifier_template: "<span id=\"{identifier}-{number}\"></span>"
+                .to_owned(),
+            store_build_cache: true,
         }
     }
 }
@@ -275,6 +284,7 @@ impl Default for ConfigProject {
             posts_per_index: default_posts_per_index(),
             render_one_page_books: false,
             debug_instrumentation: false,
+            fast_render: false,
         }
     }
 }
@@ -304,7 +314,7 @@ pub struct ConfigRSS {
     pub title: String,
     pub description: Option<String>,
     pub author_email: String,
-    pub author_name: Option<String>
+    pub author_name: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -383,11 +393,11 @@ pub struct Config {
     pub rss: Option<ConfigRSS>,
 
     /// Search
-    #[serde(rename="Search", default)]
+    #[serde(rename = "Search", default)]
     pub search: ConfigSearch,
 
     /// Rendering
-    #[serde(rename="Render", default)]
+    #[serde(rename = "Render", default)]
     pub render: ConfigRenderer,
 
     /// Shortlinks

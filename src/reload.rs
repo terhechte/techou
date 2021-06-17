@@ -5,6 +5,7 @@ use notify::Watcher;
 use crate::config::Config;
 
 use std::path;
+use std::path::PathBuf;
 use std::sync::mpsc;
 use std::time::Duration;
 
@@ -58,10 +59,22 @@ where
 
     println!("Listening for changes...");
 
-    let (delay_tx, delay_rx): (mpsc::Sender<path::PathBuf>, mpsc::Receiver<path::PathBuf>) = mpsc::channel();
-    let delayed_control = std::thread::spawn(move || {
-        while let Ok(msg) = delay_rx.recv() {
-            closure(&msg);
+    let (delay_tx, delay_rx): (mpsc::Sender<path::PathBuf>, mpsc::Receiver<path::PathBuf>) =
+        mpsc::channel();
+    std::thread::spawn(move || {
+        let mut last: Option<PathBuf> = None;
+        loop {
+            // if we have an event, we wait another brief time. Only if there're no new
+            // events, do we forward
+            if let Ok(n) = delay_rx.recv_timeout(std::time::Duration::from_millis(400)) {
+                println!("      File change {:?}", &n);
+                last = Some(n);
+                continue;
+            }
+            if let Some(n) = last.take() {
+                println!("Trigger Reload: {:?}", &n);
+                closure(&n);
+            }
         }
     });
 
@@ -81,25 +94,27 @@ where
                         }
                     }
                 }
-                if let Some(existing) = last_receiver {
-                    existing.send(true);
-                    last_receiver = None;
-                }
-                let (tx, rx) = mpsc::channel();
-                last_receiver = Some(tx);
-                let delay_clone = delay_tx.clone();
-                let inner_path = path.clone();
-                std::thread::spawn(move || {
-                    let delay = std::time::Duration::from_millis(500);
-                    std::thread::sleep(delay);
+                delay_tx.send(path.clone());
+                //if let Some(existing) = last_receiver {
+                //    existing.send(true);
+                //    last_receiver = None;
+                //}
+                //let (tx, rx) = mpsc::channel();
+                //last_receiver = Some(tx);
+                //let delay_clone = delay_tx.clone();
+                //let inner_path = path.clone();
+                //delay_clone.send(inner_path);
+                //std::thread::spawn(move || {
+                //    let delay = std::time::Duration::from_millis(500);
+                //    std::thread::sleep(delay);
 
-                    // If something was send, leave early
-                    if let Ok(true) = rx.try_recv() {
-                        return;
-                    }
-                    // Otherwise, execute the closure
-                    delay_clone.send(inner_path);
-                });
+                //    // If something was send, leave early
+                //    if let Ok(true) = rx.try_recv() {
+                //        return;
+                //    }
+                //    // Otherwise, execute the closure
+                //    delay_clone.send(inner_path);
+                //});
             }
             _ => {}
         }

@@ -205,9 +205,9 @@ impl Templates {
         config: &Config,
     ) -> Result<()> {
         let mut rendered = self.tera.render(template_name, &item).ctx(path.as_ref())?;
-        if config.server.auto_reload_browser_via_websocket_on_change {
-            rendered.push_str(&auto_reload_code(&config));
-        }
+        //if config.server.auto_reload_browser_via_websocket_on_change {
+        //    rendered.push_str(&auto_reload_code(&config));
+        //}
         spit(path.as_ref(), &rendered)
     }
 }
