@@ -109,9 +109,26 @@ struct AppState {
 }
 
 pub fn run_file_server(reload_receiver: Option<Receiver<bool>>, config: &Config) {
-    loop {
-        std::thread::sleep(Duration::from_secs(1));
-    }
+
+    let folder = config
+        .folders
+        .output_folder_path()
+        .to_str()
+        .expect("Expect output folder to serve")
+        .to_string();
+
+    println!(
+        "Serving '{:?}' on {}",
+        &folder, &config.server.server_address
+    );
+    use tiny_file_server::FileServer;
+    let address = config.server.server_address.clone();
+     FileServer::http(address.as_str())
+                 .expect("Server should be created")
+                 .run(&folder)
+                 .expect("Server should start");
+
+
     //let sys = actix::System::new("techou");
 
     //let folder = config
