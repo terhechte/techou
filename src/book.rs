@@ -347,7 +347,7 @@ pub fn parse_chapter<A: AsRef<std::path::Path>, B: AsRef<std::path::Path>>(
                     }
                 }
             }
-            Event::Start(Tag::Link(url, _)) => {
+            Event::Start(Tag::Link(_, url, _)) => {
                 let path = out_folder.as_ref().join(&url.to_string());
                 // FIXME: Set out_folder + url as slug for chapter_stack.last
                 chapter_stack.last_mut().map(|c| {
@@ -357,7 +357,7 @@ pub fn parse_chapter<A: AsRef<std::path::Path>, B: AsRef<std::path::Path>>(
                     })
                 });
             }
-            Event::End(Tag::Link(_url, _)) => {
+            Event::End(Tag::Link(_, _url, _)) => {
                 if let Some(item) = chapter_stack.last() {
                     if let Some(inner) = item.sub_chapters.last() {
                         last_chapter_link = make_link(&inner);

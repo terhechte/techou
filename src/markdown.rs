@@ -42,7 +42,7 @@ pub fn markdown_to_html(
     }
 
     if config.highlight_syntax {
-        handlers.push(Box::new(HighlightEventHandler::new()));
+        handlers.push(Box::new(HighlightEventHandler::new(config.clone())));
     }
 
     if config.parse_links {

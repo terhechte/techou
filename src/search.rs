@@ -144,7 +144,7 @@ impl<'a> Searcher<'a> {
 
         for event in p {
             match event {
-                Event::Start(Tag::Header(i)) if i <= max_section_depth => {
+                Event::Start(Tag::Heading(i, _, _)) if tusize(&i) <= max_section_depth => {
                     if !heading.is_empty() {
                         // Section finished, the next header is following now
                         // Write the data to the index, and clear it for the next section
@@ -163,7 +163,7 @@ impl<'a> Searcher<'a> {
 
                     in_header = true;
                 }
-                Event::End(Tag::Header(i)) if i <= max_section_depth => {
+                Event::End(Tag::Heading(i, _, _)) if tusize(&i) <= max_section_depth => {
                     in_header = false;
                     //section_id = Some(utils::id_from_content(&heading));
                     section_id = Some(format!("head-{}", &heading_counter));
@@ -190,9 +190,16 @@ impl<'a> Searcher<'a> {
                         body.push_str(&text);
                     }
                 }
-                Event::Html(html) | Event::InlineHtml(html) => {
+                Event::Html(html) => {
                     body.push_str(&clean_html(&html));
                 }
+                Event::Code(html) => {
+                    body.push_str(&clean_html(&html));
+                }
+                Event::Rule => {
+                    body.push_str("<hr/>");
+                }
+                Event::TaskListMarker(_html) => {}
                 Event::FootnoteReference(name) => {
                     let len = footnote_numbers.len() + 1;
                     let number = footnote_numbers.entry(name).or_insert(len);
@@ -289,5 +296,16 @@ impl<'a> Searcher<'a> {
             serde_json::to_string(&json_contents).ctx("Writing JSON Search Index")?;
 
         Ok(json_contents)
+    }
+}
+
+fn tusize(input: &pulldown_cmark::HeadingLevel) -> i32 {
+    match input {
+        pulldown_cmark::HeadingLevel::H1 => 0,
+        pulldown_cmark::HeadingLevel::H2 => 1,
+        pulldown_cmark::HeadingLevel::H3 => 2,
+        pulldown_cmark::HeadingLevel::H4 => 3,
+        pulldown_cmark::HeadingLevel::H5 => 4,
+        pulldown_cmark::HeadingLevel::H6 => 5,
     }
 }

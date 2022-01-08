@@ -11,11 +11,11 @@ pub fn write_posts_rss<A: AsRef<Path>>(
     posts: &[Document],
     to_path: A,
     rss: &ConfigRSS,
-    base_url: &str
+    base_url: &str,
 ) -> Result<()> {
     let author = match &rss.author_name {
         Some(name) => format!("{} ({})", &rss.author_email, name),
-        None => rss.author_email.clone()
+        None => rss.author_email.clone(),
     };
     let items: Vec<Item> = posts
         .iter()
@@ -30,7 +30,6 @@ pub fn write_posts_rss<A: AsRef<Path>>(
                 .author(author.clone())
                 .pub_date(post.info.rfc2822())
                 .build()
-                .unwrap()
         })
         .collect();
     let link = format!("{}/{}", &base_url, &rss.feed_address);
@@ -38,8 +37,7 @@ pub fn write_posts_rss<A: AsRef<Path>>(
         .title(rss.title.clone())
         .link(link)
         .items(items)
-        .build()
-        .unwrap();
+        .build();
     if let Some(desc) = &rss.description {
         channel.set_description(desc.clone())
     }

@@ -6,23 +6,25 @@ use syntect::util::LinesWithEndings;
 
 use super::*;
 
-use std::borrow::Cow;
+use crate::config::ConfigRenderer;
 
 pub struct HighlightEventHandler {
     next_text_is_code: bool,
     language: String,
     current_code: String,
     syntax_set: SyntaxSet,
+    config_renderer: ConfigRenderer,
 }
 
 impl HighlightEventHandler {
-    pub fn new() -> HighlightEventHandler {
+    pub fn new(config_renderer: ConfigRenderer) -> HighlightEventHandler {
         let ps = SyntaxSet::load_defaults_newlines();
         HighlightEventHandler {
             next_text_is_code: false,
             language: "text".to_owned(),
             current_code: String::new(),
             syntax_set: ps,
+            config_renderer,
         }
     }
 
@@ -48,6 +50,9 @@ impl HighlightEventHandler {
     }
 
     fn swift_code(&self) -> String {
+        if !self.config_renderer.swift_use_splash {
+            return self.non_swift_code().1;
+        }
         use rayon::prelude::*;
         // it seems splash works line-based, so we just highlight by line
         let lines: Vec<String> = self
@@ -80,7 +85,7 @@ impl EventHandler for HighlightEventHandler {
         events: &mut Vec<Event>,
     ) -> bool {
         match event {
-            Event::Start(Tag::CodeBlock(ref lang)) => {
+            Event::Start(Tag::CodeBlock(pulldown_cmark::CodeBlockKind::Fenced(ref lang))) => {
                 self.next_text_is_code = true;
                 self.language = lang.to_string();
                 return false;
@@ -94,10 +99,13 @@ impl EventHandler for HighlightEventHandler {
                     "Swift" | "swift" => ("Swift".to_owned(), self.swift_code()),
                     _ => self.non_swift_code(),
                 };
-                events.push(Event::Html(Cow::Owned(format!(
-                    "<pre class=\"{}\"><code>{}</code></pre>",
-                    &syntax_name, &html_str
-                ))));
+                events.push(Event::Html(pulldown_cmark::CowStr::Boxed(
+                    format!(
+                        "<pre class=\"{}\"><code>{}</code></pre>",
+                        &syntax_name, &html_str
+                    )
+                    .into_boxed_str(),
+                )));
                 self.current_code = String::new();
                 self.language = "text".to_owned();
                 self.next_text_is_code = false;
