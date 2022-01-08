@@ -1,4 +1,4 @@
-use clap::{App, Arg, SubCommand};
+use clap::{App, Arg};
 
 extern crate techou;
 
@@ -10,52 +10,42 @@ fn main() {
         .version("0.0.1")
         .author("Benedikt Terhechte")
         .arg(
-            Arg::with_name("project-dir")
-                .short("d")
+            Arg::new("project-dir")
+                .short('d')
                 .value_name("PROJECT-DIR")
                 .required(false),
         )
         .arg(
-            Arg::with_name("project-file")
-                .short("f")
+            Arg::new("project-file")
+                .short('f')
                 .value_name("PROJECT-FILE")
                 .required(false),
         )
-        .arg(
-            Arg::with_name("watch")
-                .short("w")
-                .long("watch")
-                .required(false),
-        )
-        .arg(
-            Arg::with_name("serve")
-                .short("s")
-                .long("serve")
-                .required(false),
-        )
+        .arg(Arg::new("watch").short('w').long("watch").required(false))
+        .arg(Arg::new("serve").short('s').long("serve").required(false))
         .subcommand(
-            SubCommand::with_name("new").about("Write a new post").arg(
-                Arg::with_name("filename")
+            App::new("new").about("Write a new post").arg(
+                Arg::new("filename")
                     .value_name("FILENAME")
                     .help("Optional filename. Otherwise techou will generate one")
                     .required(false),
             ),
         )
         .subcommand(
-            SubCommand::with_name("create")
+            App::new("create")
                 .about("Create new techou project (project.toml)")
                 .arg(
-                    Arg::with_name("filename")
+                    Arg::new("filename")
                         .value_name("FILENAME")
                         .help("Alternative name to project.toml ")
                         .required(false),
                 ),
         )
         .subcommand(
-            SubCommand::with_name("scaffold-book")
+            App::new("scaffold-book")
                 .about("Generate the folder structure and files for a book scaffolding")
                 .arg(
-                    Arg::with_name("filename")
+                    Arg::new("filename")
                         .value_name("FILENAME")
                         .help("Path to the `summary.toml` to use")
                         .required(true),
