@@ -1,0 +1,16 @@
+[Project]
+keywords = ["swift", "rust", "about", "blog", "diary", "music"]
+postsPerIndex = 20
+
+[Folders]
+publicCopyFolders = ["css", "img", "fonts", "content", "web_demo"]
+postsFolder = "my-posts"
+
+[RSS]
+description = "Various Tech Tidbits"
+
+[Render]
+storeBuildCache = false
+
+[Server]
+serverAddress = "134.122.89.213:80"

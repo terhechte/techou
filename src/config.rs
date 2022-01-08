@@ -14,7 +14,7 @@ fn default_posts_per_index() -> u32 {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ConfigProject {
-    #[serde(rename = "baseURL")]
+    #[serde(default, rename = "baseURL")]
     pub base_url: String, // the base url of the website
     #[serde(default)]
     pub keywords: Vec<String>,
@@ -40,6 +40,9 @@ pub struct ConfigRenderer {
     // Should code syntax be highlighted
     #[serde(default)]
     pub highlight_syntax: bool,
+    // Should custom syntax highlighting (via Splash) be used for Swift?
+    #[serde(default)]
+    pub swift_use_splash: bool,
     // Markdown table support
     #[serde(default)]
     pub markdown_tables: bool,
@@ -69,6 +72,7 @@ impl Default for ConfigRenderer {
     fn default() -> Self {
         ConfigRenderer {
             highlight_syntax: true,
+            swift_use_splash: false,
             markdown_tables: true,
             markdown_footnotes: true,
             parse_headers: true,
@@ -88,22 +92,35 @@ pub struct ConfigFolders {
     pub root: PathBuf,
 
     /// Folders on Disk
+    #[serde(default)]
     pub posts_folder: String,
+    #[serde(default)]
     pub pages_folder: String,
+    #[serde(default)]
     pub books_folder: String,
+    #[serde(default)]
     pub output_folder: String,
+    #[serde(default)]
     pub public_folder: String,
+    #[serde(default)]
     pub public_copy_folders: Vec<String>,
 
     /// Name of book folders including the summary toml file
+    #[serde(default)]
     pub books: Vec<String>,
 
     /// Folder names in the generated structure
+    #[serde(default)]
     pub posts_folder_name: String,
+    #[serde(default)]
     pub tags_folder_name: String,
+    #[serde(default)]
     pub keywords_folder_name: String,
+    #[serde(default)]
     pub category_folder_name: String,
+    #[serde(default)]
     pub pages_folder_name: String,
+    #[serde(default)]
     pub books_folder_name: String,
 }
 
@@ -178,10 +195,15 @@ impl Default for ConfigFolders {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ConfigTemplates {
+    #[serde(default)]
     pub post_template: String,
+    #[serde(default)]
     pub page_template: String,
+    #[serde(default)]
     pub list_template: String,
+    #[serde(default)]
     pub book_template: String,
+    #[serde(default)]
     pub chapter_template: String,
 }
 
@@ -235,27 +257,36 @@ impl Default for ConfigProject {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ConfigDates {
+    #[serde(default)]
     pub date_format: String,
+    #[serde(default)]
     pub date_time_format: String,
+    #[serde(default)]
     pub output_date_time_format: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ConfigServer {
+    #[serde(default)]
     pub server_address: String, // usually "127.0.0.1:8001"
     // Insert websocket javascript to automatically reload
     // when a change is detected
+    #[serde(default)]
     pub auto_reload_browser_via_websocket_on_change: bool,
+    #[serde(default)]
     pub auto_reload_websocket_path: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ConfigRSS {
+    #[serde(default)]
     pub feed_address: String, // the feed file name
+    #[serde(default)]
     pub title: String,
     pub description: Option<String>,
+    #[serde(default)]
     pub author_email: String,
     pub author_name: Option<String>,
 }
@@ -264,30 +295,40 @@ pub struct ConfigRSS {
 #[serde(rename_all = "camelCase", default)]
 pub struct ConfigSearch {
     /// Enable the search feature. Default: `true`.
+    #[serde(default)]
     pub enable: bool,
     /// The name / path of the `.js` file that the search index will be written to
+    #[serde(default)]
     pub search_index_file: String,
     /// Maximum number of visible results. Default: `30`.
+    #[serde(default)]
     pub limit_results: u32,
     /// The number of words used for a search result teaser. Default: `30`.
+    #[serde(default)]
     pub teaser_word_count: u32,
     /// Define the logical link between multiple search words.
     /// If true, all search words must appear in each result. Default: `true`.
+    #[serde(default)]
     pub use_boolean_and: bool,
     /// Boost factor for the search result score if a search word appears in the header.
     /// Default: `2`.
+    #[serde(default)]
     pub boost_title: u8,
     /// Boost factor for the search result score if a search word appears in the hierarchy.
     /// The hierarchy contains all titles of the parent documents and all parent headings.
     /// Default: `1`.
+    #[serde(default)]
     pub boost_hierarchy: u8,
     /// Boost factor for the search result score if a search word appears in the text.
     /// Default: `1`.
+    #[serde(default)]
     pub boost_paragraph: u8,
     /// True if the searchword `micro` should match `microwave`. Default: `true`.
+    #[serde(default)]
     pub expand: bool,
     /// Documents are split into smaller parts, seperated by headings. This defines, until which
     /// level of heading documents should be split. Default: `3`. (`### This is a level 3 heading`)
+    #[serde(default)]
     pub heading_split_level: u8,
 }
 
@@ -418,6 +459,10 @@ impl Config {
         docs.insert(
             "debugInstrumentation",
             "Add additional debug information to the HTML",
+        );
+        docs.insert(
+            "swiftUseSplash",
+            "Proper Swift rendering doesn't work well with Syntect. Better rendering is provided by Splash (github.com/JohnSundell/Splash). Enabling this requires a Splash install on the system.",
         );
         docs.insert("parseHeaders", "Detect headers and generate small identifiers and a list of all headers, so that they can be listed in a sidebar");
         docs.insert("parseLinks", "convert `lnk::link-id` with the shortlink and `rel::link` with the absolute link to the current root");
