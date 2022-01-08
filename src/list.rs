@@ -83,17 +83,3 @@ where
     pub pagination: Pagination,
     pub list_type: ListType,
 }
-
-impl<'a, D: AsRef<Document>> List<'a, D>
-where
-    D: Serialize,
-{
-    pub fn index(title: &'a str, posts: &'a [D]) -> Self {
-        List {
-            title,
-            posts,
-            pagination: Default::default(),
-            list_type: ListType::Index,
-        }
-    }
-}

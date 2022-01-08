@@ -1,5 +1,5 @@
-use regex::Regex;
 use lazy_static::*;
+use regex::Regex;
 use std::borrow::Cow;
 
 pub fn hash_string(input: &str, length: usize) -> String {
@@ -34,7 +34,7 @@ pub struct DebugTimer {
     main: std::time::Instant,
     sub: std::time::Instant,
     level: i32,
-    enable: bool
+    enable: bool,
 }
 
 impl DebugTimer {
@@ -44,13 +44,15 @@ impl DebugTimer {
             main: std::time::Instant::now(),
             sub: std::time::Instant::now(),
             level: level + 1,
-            enable: config.project.debug_instrumentation
+            enable: config.project.debug_instrumentation,
         }
     }
 
     pub fn sub_step(&mut self, name: &str) {
-        if !self.enable { return }
-        for x in 0..=self.level {
+        if !self.enable {
+            return;
+        }
+        for _x in 0..=self.level {
             print!(">");
         }
         let next = std::time::Instant::now();
@@ -59,12 +61,13 @@ impl DebugTimer {
     }
 
     pub fn end(self) {
-        if !self.enable { return }
-        for x in 0..=self.level {
+        if !self.enable {
+            return;
+        }
+        for _x in 0..=self.level {
             print!(">");
         }
         let next = std::time::Instant::now();
         println!(" Finish {:?}:", next - self.main);
     }
-
 }

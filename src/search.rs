@@ -1,18 +1,17 @@
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
-use std::path::Path;
 
 use elasticlunr::Index;
-use pulldown_cmark::*;
-use serde_json;
-use serde_derive::*;
 use lazy_static::*;
+use pulldown_cmark::*;
+use serde_derive::*;
+use serde_json;
 
-use crate::document::Document;
 use crate::book::Book;
+use crate::config::Config;
+use crate::document::Document;
 use crate::error::*;
 use crate::utils;
-use crate::config::Config;
 
 // This was lifted & adapted from mdbook / searcher.rs
 
@@ -39,7 +38,7 @@ fn clean_html(html: &str) -> String {
 pub struct Searcher<'a> {
     index: Index,
     doc_urls: Vec<String>,
-    config: &'a Config
+    config: &'a Config,
 }
 
 impl<'a> Searcher<'a> {
@@ -47,35 +46,52 @@ impl<'a> Searcher<'a> {
         let index = Index::new(&["title", "body", "breadcrumbs"]);
         let doc_urls = Vec::new();
         Searcher {
-            index, doc_urls, config
+            index,
+            doc_urls,
+            config,
         }
     }
 
     /// Index one document
     pub fn index_document(&mut self, document: &Document) -> Result<()> {
         // Don't index documents that opt out of indexing
-        if !document.info.indexed { return Ok(()) }
-        self.render_item(&document.info.title,
-                    &document.slug,
-                    &document.info.description_html,
-                    &document.raw_content)
+        if !document.info.indexed {
+            return Ok(());
+        }
+        self.render_item(
+            &document.info.title,
+            &document.slug,
+            &document.info.description_html,
+            &document.raw_content,
+        )
     }
 
     /// Index all chapters of a book and the book itself
     pub fn index_book(&mut self, book: &Book) -> Result<()> {
         // Don't index documents that opt out of indexing
-        if !book.info.indexed { return Ok(()) }
+        if !book.info.indexed {
+            return Ok(());
+        }
 
         if !&book.info.description.is_empty() {
-            self.render_item(&book.info.title, &book.slug, &book.info.description_html, "");
+            self.render_item(
+                &book.info.title,
+                &book.slug,
+                &book.info.description_html,
+                "",
+            )?;
         }
         for chapter in &book.chapters {
             // Don't index documents that opt out of indexing
-            if !chapter.document.info.indexed { continue }
-            self.render_item(&chapter.document.info.title,
-                             &chapter.document.slug,
-                             &chapter.document.info.description_html,
-                             &chapter.document.raw_content)?;
+            if !chapter.document.info.indexed {
+                continue;
+            }
+            self.render_item(
+                &chapter.document.info.title,
+                &chapter.document.slug,
+                &chapter.document.info.description_html,
+                &chapter.document.raw_content,
+            )?;
         }
         Ok(())
     }
@@ -91,18 +107,18 @@ impl<'a> Searcher<'a> {
     }
 
     /// Renders markdown into flat unformatted text and adds it to the search index.
-    fn render_item(&mut self,
-                   title: &str,
-                   slug: &str,
-                   description_html: &str,
-                   contents: &str
+    fn render_item(
+        &mut self,
+        title: &str,
+        slug: &str,
+        description_html: &str,
+        contents: &str,
     ) -> Result<()> {
-
         // As said below, we have to have one parse method and not do it 5 times.
         // this is terrible for performance
         let first_index = match contents.find("---\n") {
             Some(o) => o,
-            None => return Ok(())
+            None => return Ok(()),
         };
 
         let mut opts = Options::empty();
@@ -198,12 +214,7 @@ impl<'a> Searcher<'a> {
     }
 
     /// Uses the given arguments to construct a search document, then inserts it to the given index.
-    fn add_doc(
-        &mut self,
-        anchor_base: &str,
-        section_id: &Option<String>,
-        items: &[&str],
-    ) {
+    fn add_doc(&mut self, anchor_base: &str, section_id: &Option<String>, items: &[&str]) {
         let url = if let Some(ref id) = *section_id {
             Cow::Owned(format!("{}#{}", anchor_base, id))
         } else {
@@ -272,14 +283,11 @@ impl<'a> Searcher<'a> {
 
         // By converting to serde_json::Value as an intermediary, we use a
         // BTreeMap internally and can force a stable ordering of map keys.
-        let json_contents = serde_json::to_value(&json_contents)
-            .ctx("Writing JSON Search Index")?;
-        let json_contents = serde_json::to_string(&json_contents)
-            .ctx("Writing JSON Search Index")?;
+        let json_contents =
+            serde_json::to_value(&json_contents).ctx("Writing JSON Search Index")?;
+        let json_contents =
+            serde_json::to_string(&json_contents).ctx("Writing JSON Search Index")?;
 
         Ok(json_contents)
     }
-
 }
-
-

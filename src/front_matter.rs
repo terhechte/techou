@@ -1,7 +1,6 @@
 use chrono::{Datelike, NaiveDate, NaiveDateTime, Timelike};
 use serde_derive::{Deserialize, Serialize};
 use toml::de::from_str;
-use pulldown_cmark::{html, Parser};
 
 use crate::config::Config;
 use crate::error::{Result, TechouError};
@@ -16,7 +15,9 @@ fn default_nativetime() -> NaiveDateTime {
     NaiveDate::from_ymd(2016, 7, 8).and_hms(9, 10, 11)
 }
 
-fn default_true() -> bool { true }
+fn default_true() -> bool {
+    true
+}
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct DateInfo {
@@ -130,20 +131,26 @@ pub fn parse_front_matter<'a, A: AsRef<Path>>(
     front_matter.date = date;
     front_matter.date_info = DateInfo::from(date);
 
-    let ParseResult { content, sections } = markdown_to_html(&front_matter.description, "", &None, None, &config.render);
+    let ParseResult {
+        content,
+        sections: _,
+    } = markdown_to_html(&front_matter.description, "", &None, None, &config.render);
     front_matter.description_html = content;
 
     Ok((front_matter, article))
 }
 
 pub fn default_front_matter(title: &str, date: &str) -> String {
-    format!(r#"[frontMatter]
+    format!(
+        r#"[frontMatter]
 title = "{}"
 tags = []
 created = "{}"
 description = ""
 published = false
-"#, &title, &date)
+"#,
+        &title, &date
+    )
 }
 
 pub fn join_front_matter_with_content(front_matter: &str, content: &str) -> String {

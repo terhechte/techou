@@ -24,7 +24,7 @@ where
         let cloned_sender = cloned_sender.clone();
         trigger_on_change(paths, move |path| {
             action(path, &inner_config);
-            cloned_sender.send(true);
+            cloned_sender.send(true).unwrap();
             println!("Done");
         });
     });
@@ -78,7 +78,6 @@ where
         }
     });
 
-    let mut last_receiver: Option<mpsc::Sender<bool>> = None;
     for event in rx.iter() {
         println!("Received filesystem event: {:?}", event);
         match event {
@@ -94,27 +93,7 @@ where
                         }
                     }
                 }
-                delay_tx.send(path.clone());
-                //if let Some(existing) = last_receiver {
-                //    existing.send(true);
-                //    last_receiver = None;
-                //}
-                //let (tx, rx) = mpsc::channel();
-                //last_receiver = Some(tx);
-                //let delay_clone = delay_tx.clone();
-                //let inner_path = path.clone();
-                //delay_clone.send(inner_path);
-                //std::thread::spawn(move || {
-                //    let delay = std::time::Duration::from_millis(500);
-                //    std::thread::sleep(delay);
-
-                //    // If something was send, leave early
-                //    if let Ok(true) = rx.try_recv() {
-                //        return;
-                //    }
-                //    // Otherwise, execute the closure
-                //    delay_clone.send(inner_path);
-                //});
+                delay_tx.send(path.clone()).unwrap();
             }
             _ => {}
         }

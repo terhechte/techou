@@ -1,4 +1,3 @@
-use std::cell::Cell;
 use std::collections::HashMap;
 use std::error::Error;
 use std::path::Path;

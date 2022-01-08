@@ -281,7 +281,7 @@ pub fn parse_chapter<A: AsRef<std::path::Path>, B: AsRef<std::path::Path>>(
     out_folder: B,
 ) -> Vec<ChapterInfo> {
     // A non-recursive parsing of a tree data structure
-    let mut parser = Parser::new(&content);
+    let parser = Parser::new(&content);
     let mut chapter_stack: Vec<ChapterInfo> = vec![Default::default()];
     let mut last_chapter_link: Option<ChapterLink> = None;
     for event in parser {
@@ -341,7 +341,7 @@ pub fn parse_chapter<A: AsRef<std::path::Path>, B: AsRef<std::path::Path>>(
                 }
             }
             Event::End(Tag::List(_)) if chapter_stack.len() > 1 => {
-                if let Some(mut chapter) = chapter_stack.pop() {
+                if let Some(chapter) = chapter_stack.pop() {
                     if let Some(sb) = chapter_stack.last_mut() {
                         sb.sub_chapters.push(chapter);
                     }
@@ -357,7 +357,7 @@ pub fn parse_chapter<A: AsRef<std::path::Path>, B: AsRef<std::path::Path>>(
                     })
                 });
             }
-            Event::End(Tag::Link(url, _)) => {
+            Event::End(Tag::Link(_url, _)) => {
                 if let Some(item) = chapter_stack.last() {
                     if let Some(inner) = item.sub_chapters.last() {
                         last_chapter_link = make_link(&inner);
@@ -370,8 +370,8 @@ pub fn parse_chapter<A: AsRef<std::path::Path>, B: AsRef<std::path::Path>>(
                         .last_mut()
                         .map(|c2| c2.name = text.to_string())
                 });
-                let c1 = chapter_stack.len();
-                let c2 = chapter_stack.last().unwrap().sub_chapters.len();
+                // let c1 = chapter_stack.len();
+                // let c2 = chapter_stack.last().unwrap().sub_chapters.len();
             }
             _ => (),
         }

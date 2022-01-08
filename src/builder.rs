@@ -11,6 +11,7 @@ use crate::utils;
 use std::path::{Path, PathBuf};
 
 trait NonAdjoinedPush {
+    #[allow(non_snake_case)]
     fn nonAdjoinedPush(&self, path: &str) -> PathBuf;
 }
 
@@ -86,38 +87,6 @@ impl<'a> Builder<'a> {
                 Err(e) => println!("Could not write article {}: {:?}", &page.filename, &e),
             }
         });
-        Ok(())
-    }
-
-    /// Write all the posts into one long index file.
-    pub fn index<A: AsRef<Path>>(&self, posts: &[Document], folder: A) -> Result<()> {
-        if posts.iter().all(|d| d.updated == false) {
-            return Ok(());
-        }
-        let folder = self
-            .config
-            .folders
-            .output_folder_path()
-            .join(folder.as_ref());
-        let path = folder.join("index.html");
-        match self.template_writer.write_list(
-            &self.context,
-            &List {
-                title: "Index",
-                posts,
-                pagination: Pagination {
-                    current: 0,
-                    next: None,
-                    previous: None,
-                },
-                list_type: ListType::Index,
-            },
-            &path,
-            &self.config,
-        ) {
-            Ok(_) => (), /*println!("Wrote index: {:?}", &path)*/
-            Err(e) => println!("Could not write index {:?}: {:?}", &path, &e),
-        };
         Ok(())
     }
 
@@ -232,7 +201,7 @@ impl<'a> Builder<'a> {
             let path = folder.join(&book.folder);
 
             // for each book, we need to write out all the chapters recursively
-            self.chapter(&book, &book.chapters);
+            self.chapter(&book, &book.chapters).unwrap();
 
             let path = path.join("index.html");
             match self

@@ -20,7 +20,6 @@ pub fn interactive(config: &Config) {
         filename: String,
         title: String,
         date: String,
-        tags: Vec<String>,
     }
     let mut options: Options = Default::default();
     for (key, title, default_value) in flags {

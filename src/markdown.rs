@@ -86,6 +86,7 @@ mod tests {
             parse_headers: true,
             section_header_identifier_template: "".to_owned(),
             store_build_cache: false,
+            swift_use_splash: false,
         };
         let contents = r#"
 # Section 1
@@ -138,7 +139,6 @@ if let Some(x) = variable {
     #[test]
     fn test_reflinks() {
         use crate::config::ConfigRenderer;
-        use crate::document;
         use crate::markdown::*;
         let cfg = ConfigRenderer::default();
         let contents = r#"

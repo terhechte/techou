@@ -201,9 +201,9 @@ impl Templates {
         template_name: &str,
         item: &'a I,
         path: A,
-        config: &Config,
+        _config: &Config,
     ) -> Result<()> {
-        let mut rendered = self.tera.render(template_name, &item).ctx(path.as_ref())?;
+        let rendered = self.tera.render(template_name, &item).ctx(path.as_ref())?;
         //if config.server.auto_reload_browser_via_websocket_on_change {
         //    rendered.push_str(&auto_reload_code(&config));
         //}

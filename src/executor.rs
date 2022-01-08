@@ -15,8 +15,10 @@ use crate::sitemap::SiteMap;
 use crate::template::Templates;
 use crate::utils::DebugTimer;
 
-pub fn execute(ignore_errors: bool, config: &Config, cache: &BuildCache) -> Result<()> {
-    catchable_execute(&config, &cache).map_err(|e| println!("Error: {}", &e));
+pub fn execute(_ignore_errors: bool, config: &Config, cache: &BuildCache) -> Result<()> {
+    catchable_execute(&config, &cache)
+        .map_err(|e| println!("Error: {}", &e))
+        .unwrap();
     Ok(())
 }
 
@@ -55,7 +57,7 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
 
     if config.search.enable && !config.project.fast_render {
         for document in &posts {
-            searcher.index_document(document);
+            searcher.index_document(document)?;
         }
     }
 
@@ -82,7 +84,7 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
 
     if config.search.enable && !config.project.fast_render {
         for document in &pages {
-            searcher.index_document(document);
+            searcher.index_document(document)?;
         }
     }
 
@@ -131,7 +133,7 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
 
     if config.search.enable && !config.project.fast_render {
         for book in &books {
-            searcher.index_book(book);
+            searcher.index_book(book)?;
         }
     }
 
@@ -215,7 +217,7 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
             .folders
             .output_folder_path()
             .join(&config.search.search_index_file);
-        spit(search_index_output_path, &search_contents);
+        spit(search_index_output_path, &search_contents)?;
         timer.sub_step("Write Search");
     }
 
