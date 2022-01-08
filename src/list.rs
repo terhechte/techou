@@ -1,8 +1,7 @@
 use serde::Serialize;
-use serde_derive::Serialize;
 
-use crate::document::Document;
 use crate::book::Book;
+use crate::document::Document;
 
 #[derive(Serialize, Debug)]
 pub struct Year<'a> {
@@ -56,9 +55,8 @@ pub struct DocumentContext<'a> {
 #[derive(Serialize, Debug, Clone)]
 pub enum ListType {
     Index,
-    Category
+    Category,
 }
-
 
 #[derive(Serialize, Debug, Clone)]
 pub struct Page {

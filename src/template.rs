@@ -1,5 +1,4 @@
 use serde::Serialize;
-use serde_derive::Serialize;
 use tera::Tera;
 
 use crate::config::Config;

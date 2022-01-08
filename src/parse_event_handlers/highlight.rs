@@ -8,23 +8,21 @@ use super::*;
 
 use std::borrow::Cow;
 
-pub struct HighlightEventHandler<'a> {
+pub struct HighlightEventHandler {
     next_text_is_code: bool,
     language: String,
     current_code: String,
     syntax_set: SyntaxSet,
-    prefix: &'a Option<String>,
 }
 
-impl<'a> HighlightEventHandler<'a> {
-    pub fn new(prefix: &'a Option<String>) -> HighlightEventHandler<'a> {
+impl HighlightEventHandler {
+    pub fn new() -> HighlightEventHandler {
         let ps = SyntaxSet::load_defaults_newlines();
         HighlightEventHandler {
             next_text_is_code: false,
             language: "text".to_owned(),
             current_code: String::new(),
             syntax_set: ps,
-            prefix,
         }
     }
 
@@ -74,7 +72,7 @@ impl<'a> HighlightEventHandler<'a> {
     }
 }
 
-impl<'a> EventHandler for HighlightEventHandler<'a> {
+impl EventHandler for HighlightEventHandler {
     fn handle(
         &mut self,
         event: &Event,

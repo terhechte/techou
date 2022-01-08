@@ -1,14 +1,21 @@
-use pulldown_cmark::{html, Event, Parser, Options};
-use crate::parse_event_handlers::{
-    highlight::HighlightEventHandler, section::SectionEventHandler, links::LinksEventHandler, EventHandler,
-};
-pub use crate::parse_event_handlers::ParseResult;
 use crate::config::ConfigRenderer;
+pub use crate::parse_event_handlers::ParseResult;
+use crate::parse_event_handlers::{
+    highlight::HighlightEventHandler, links::LinksEventHandler, section::SectionEventHandler,
+    EventHandler,
+};
+use pulldown_cmark::{html, Event, Options, Parser};
 
 use std::collections::HashMap;
 
 // Transform the AST of the markdown to support custom markdown constructs
-pub fn markdown_to_html(markdown: &str, section_identifier: &str, links: &Option<HashMap<String, String>>, book_html_root: Option<&str>, config: &ConfigRenderer) -> ParseResult {
+pub fn markdown_to_html(
+    markdown: &str,
+    section_identifier: &str,
+    links: &Option<HashMap<String, String>>,
+    book_html_root: Option<&str>,
+    config: &ConfigRenderer,
+) -> ParseResult {
     let default_hashmap: HashMap<String, String> = HashMap::new();
     let mut opts = Options::empty();
     if config.markdown_tables {
@@ -28,18 +35,24 @@ pub fn markdown_to_html(markdown: &str, section_identifier: &str, links: &Option
     let mut handlers: Vec<Box<dyn EventHandler>> = Vec::new();
 
     if config.parse_headers {
-        handlers.push(Box::new(SectionEventHandler::new(section_identifier, &config.section_header_identifier_template)));
+        handlers.push(Box::new(SectionEventHandler::new(
+            section_identifier,
+            &config.section_header_identifier_template,
+        )));
     }
 
     if config.highlight_syntax {
-        handlers.push(Box::new(HighlightEventHandler::new(&config.syntax_highlight_code_class_prefix)));
+        handlers.push(Box::new(HighlightEventHandler::new()));
     }
 
     if config.parse_links {
         if let Some(links) = links {
             handlers.insert(0, Box::new(LinksEventHandler::new(&links, book_html_root)))
         } else {
-            handlers.insert(0, Box::new(LinksEventHandler::new(&default_hashmap, book_html_root)))
+            handlers.insert(
+                0,
+                Box::new(LinksEventHandler::new(&default_hashmap, book_html_root)),
+            )
         }
     }
 
@@ -59,20 +72,20 @@ pub fn markdown_to_html(markdown: &str, section_identifier: &str, links: &Option
     result
 }
 
-
 #[cfg(test)]
 mod tests {
     #[test]
     fn test_sections() {
-        use crate::document;
-        use crate::markdown::*;
         use crate::config::ConfigRenderer;
+        use crate::markdown::*;
         let cfg = ConfigRenderer {
-            syntax_highlight_code_class_prefix: None,
             highlight_syntax: true,
             markdown_tables: false,
             markdown_footnotes: true,
-            parse_links: true
+            parse_links: true,
+            parse_headers: true,
+            section_header_identifier_template: "".to_owned(),
+            store_build_cache: false,
         };
         let contents = r#"
 # Section 1
@@ -88,17 +101,15 @@ More text
 
     #[test]
     fn test_syntax() {
-        use crate::document;
-        use crate::markdown::*;
         use crate::config::ConfigRenderer;
-        let mut cfg = ConfigRenderer::default();
-        cfg.syntax_highlight_code_class_prefix = Some("apv".to_owned());
+        use crate::markdown::*;
+        let cfg = ConfigRenderer::default();
         let contents = r#"
 # Section 1
 `printf()`
 
 more code
-``` Swift
+``` rs
 if let Some(x) = variable {
   println!("{}", &x);
 }
@@ -106,13 +117,14 @@ if let Some(x) = variable {
 "#;
         let result = markdown_to_html(&contents, "", &None, None, &cfg);
         // Test for the CSS classes
-        assert!(result.content.contains("apvsource apvswift"));
+        println!("{}", result.content);
+        assert!(result.content.contains("techoucontrol techourust"));
     }
 
     #[test]
     fn test_rellinks() {
-        use crate::markdown::*;
         use crate::config::ConfigRenderer;
+        use crate::markdown::*;
         let cfg = ConfigRenderer::default();
         let contents = r#"
 [bonjour](rel::posts/post.md)
@@ -125,9 +137,9 @@ if let Some(x) = variable {
 
     #[test]
     fn test_reflinks() {
+        use crate::config::ConfigRenderer;
         use crate::document;
         use crate::markdown::*;
-        use crate::config::ConfigRenderer;
         let cfg = ConfigRenderer::default();
         let contents = r#"
 # Section 1
@@ -138,11 +150,10 @@ and a non-link
 [non-link](http://example.com)
 yep
 "#;
-        let reflinks: HashMap<String, String> =
-            [
-                ("yahoo", "jojo"),
-                ("drm", "jaja")
-            ].iter().map(|(a, b)| (a.to_string(), b.to_string())).collect();
+        let reflinks: HashMap<String, String> = [("yahoo", "jojo"), ("drm", "jaja")]
+            .iter()
+            .map(|(a, b)| (a.to_string(), b.to_string()))
+            .collect();
         let result = markdown_to_html(&contents, "", &Some(reflinks), None, &cfg);
         // Test for the CSS classes
         println!("{}", &result.content);
