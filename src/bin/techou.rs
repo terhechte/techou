@@ -79,7 +79,7 @@ fn main() {
                 &path
             );
         }
-        techou::io_utils::spit(&path, techou::config::Config::example_config())
+        techou::io_utils::spit(&path, &techou::config::Config::example_config(root_dir))
             .expect("Expect to write config");
         println!("New Config '{:?}' created.", &path);
         ::std::process::exit(0);
@@ -87,7 +87,7 @@ fn main() {
 
     let mut config = match project_file.len() {
         0 => techou::config::Config::new(root_dir),
-        _ => match techou::config::Config::file(project_file) {
+        _ => match techou::config::Config::from_file(project_file) {
             Ok(c) => c,
             Err(e) => panic!("Invalid Project File {:?}: {:?}", &project_file, &e),
         },

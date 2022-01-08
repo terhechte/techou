@@ -7,58 +7,6 @@ use std::collections::HashMap;
 use std::env;
 use std::path::PathBuf;
 
-static DEFAULT_PROJECT_TOML: &str = r#"
-[Project]
-keywords = ["nam", "nom", "grah"]
-# baseURL = "https://example.com"
-
-# How many posts per index (default: 8)
-# postsPerIndex = 9
-
-[Folders]
-# Where are your posts
-postsFolder = "posts"
-
-# Where are additional pages (if you intend to write them)
-# pagesFolder = "pages"
-
-# Where should the static site be stored
-outputFolder = "html"
-
-# Where are the templates and public items
-publicFolder = "public"
-
-# The file and folders that should be copied over from within the public folder
-publicCopyFolders = ["css", "img", "js"]
-
-[Dates]
-# The input date format that should be used for your posts and apges
-dateFormat = "%Y-%m-%d"
-# The input date time format. Has priority over the date format
-# dateTimeFormat = "%Y-%m-%d %H:%M:%S"
-
-[Server]
-# On which address to run the dev server
-serverAddress = "127.0.0.1:8001"
-
-# [RSS]
-# feedAddress = "/feed.rss"
-# title = "My Blog"
-# authorEmail = "john@doe.com"
-# authorName = "John Doe"
-
-# [Shortlinks]
-# Short map from a short link such as `lnk::bookarticle` to `/articles/book.html`
-# or `lnk::article2` to `https://example.com/article2.html`
-# article2 = "https://example.com/article2.html"
-# bookarticle = "/articles/book.html"
-
-# This is where you can add additional meta information.
-# they're available in all templates
-# [Meta]
-# twitter = "https://twitter.com/johndoe"
-"#;
-
 fn default_posts_per_index() -> u32 {
     8
 }
@@ -89,10 +37,6 @@ pub struct ConfigProject {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ConfigRenderer {
-    // The prefix to use for each entry in the class list for the syntax
-    // highlighter
-    #[serde(default)]
-    pub syntax_highlight_code_class_prefix: Option<String>,
     // Should code syntax be highlighted
     #[serde(default)]
     pub highlight_syntax: bool,
@@ -124,9 +68,8 @@ pub struct ConfigRenderer {
 impl Default for ConfigRenderer {
     fn default() -> Self {
         ConfigRenderer {
-            syntax_highlight_code_class_prefix: None,
             highlight_syntax: true,
-            markdown_tables: false,
+            markdown_tables: true,
             markdown_footnotes: true,
             parse_headers: true,
             parse_links: true,
@@ -218,7 +161,7 @@ impl Default for ConfigFolders {
             books_folder: "books".to_string(),
             output_folder: "html".to_string(),
             public_folder: "public".to_string(),
-            public_copy_folders: vec!["css".to_string(), "img".to_string()],
+            public_copy_folders: vec!["css".to_string(), "img".to_string(), "js".to_string()],
 
             books: Vec::new(),
 
@@ -268,7 +211,7 @@ impl Default for ConfigServer {
     fn default() -> Self {
         ConfigServer {
             server_address: "127.0.0.1:8001".to_string(),
-            auto_reload_browser_via_websocket_on_change: false,
+            auto_reload_browser_via_websocket_on_change: true,
             auto_reload_websocket_path: "/ws/".to_string(),
         }
     }
@@ -277,7 +220,7 @@ impl Default for ConfigServer {
 impl Default for ConfigProject {
     fn default() -> Self {
         ConfigProject {
-            base_url: Default::default(),
+            base_url: "https://example.com".to_owned(),
             keywords: Default::default(),
             title: Default::default(),
             description: Default::default(),
@@ -410,21 +353,13 @@ pub struct Config {
 }
 
 impl Config {
+    /// Create a default in-memory config for this folder
     pub fn new<A: AsRef<std::path::Path>>(folder: A) -> Config {
-        let mut config: Config = Default::default();
-        config.folders.root = folder.as_ref().to_path_buf();
-        config
+        Config::from_toml("", folder.as_ref().to_path_buf()).unwrap()
     }
 
-    pub fn toml(input: &str, in_folder: &PathBuf) -> Result<Config> {
-        let mut config: Config =
-            toml::from_str(&input).ctx(format!("toml file in folder {:?}", &in_folder))?;
-
-        config.folders.root = in_folder.clone();
-        Ok(config)
-    }
-
-    pub fn file<A: AsRef<std::path::Path>>(toml_file: A) -> Result<Config> {
+    /// Open a config with this file
+    pub fn from_file<A: AsRef<std::path::Path>>(toml_file: A) -> Result<Config> {
         let parent = match &toml_file.as_ref().parent() {
             Some(root) => root.to_path_buf(),
             None => panic!(
@@ -433,11 +368,111 @@ impl Config {
             ),
         };
         let contents = slurp(toml_file)?;
-        Config::toml(&contents, &parent)
+        Config::from_toml(&contents, parent)
     }
 
-    pub fn example_config() -> &'static str {
-        DEFAULT_PROJECT_TOML
+    /// Parse the given input toml from a config in the given `in_folder`
+    pub fn from_toml(input: &str, in_folder: PathBuf) -> Result<Config> {
+        // The default toml is parsed from the default config
+        let default_config = Config::default();
+        let parsed = toml::to_string(&default_config).unwrap();
+
+        // Parse the config based on multiple sources:
+        use config::{Environment, File, FileFormat};
+        let s = config::Config::builder()
+            .add_source(File::from_str(&parsed, FileFormat::Toml))
+            .add_source(File::from_str(input, FileFormat::Toml))
+            .add_source(Environment::with_prefix("techou"))
+            .build()
+            .map_err(|e| crate::error::TechouError::ConfigBuilding {
+                source: e,
+                context: "Could not build config".to_owned(),
+            })?;
+
+        let mut configuration: Config = s.try_deserialize().unwrap();
+        configuration.folders.root = in_folder.clone();
+        Ok(configuration)
+    }
+
+    pub fn example_config(folder: impl AsRef<std::path::Path>) -> String {
+        // It would be great if we could just serialize `Config::default` to toml, but that would
+        // not include the helpful comments:
+        // https://github.com/alexcrichton/toml-rs/issues/274
+        // So instead the default config will be `Config::default` + the disabled options
+        // and then we comment everything out
+        let mut config = Config::new(folder);
+        config.rss = Some(ConfigRSS {
+            feed_address: "feed.rss".to_string(),
+            title: "My RSS Feed".to_string(),
+            description: Some("".to_string()),
+            author_email: "".to_string(),
+            author_name: Some("".to_string()),
+        });
+
+        // documentation strings
+        let mut docs = HashMap::new();
+        docs.insert(
+            "fastRender",
+            "Fast rendering means we don't write tags, archives, search indexes etc.",
+        );
+        docs.insert(
+            "debugInstrumentation",
+            "Add additional debug information to the HTML",
+        );
+        docs.insert("parseHeaders", "Detect headers and generate small identifiers and a list of all headers, so that they can be listed in a sidebar");
+        docs.insert("parseLinks", "convert `lnk::link-id` with the shortlink and `rel::link` with the absolute link to the current root");
+        docs.insert("sectionHeaderIdentifierTemplate", "The HTML to use for the header sections that are parsed out of `h1` tags and can be used to populate a sidebar for longer articles or a toc");
+        docs.insert("storeBuildCache", "If this is true, we save the buildcache to disk. This will enable faster rendering. The filename will be `buildcache.techou`");
+        docs.insert("postsFolder", "Where are your posts");
+        docs.insert(
+            "pagesFolder",
+            "Where are additional pages (if you intend to write them)",
+        );
+        docs.insert("publicFolder", "Where are the templates and public items");
+        docs.insert(
+            "publicCopyFolders",
+            "The file and folders that should be copied over from within the public folder",
+        );
+        docs.insert(
+            "dateFormat",
+            "The input date format that should be used for your posts and apges",
+        );
+        docs.insert(
+            "dateTimeFormat",
+            "The input date time format. Has priority over the date format",
+        );
+
+        let parsed = toml::to_string_pretty(&config).unwrap();
+        let mut lines = Vec::new();
+        for line in parsed.lines() {
+            for key in docs.keys() {
+                if line.starts_with(key) {
+                    if let Some(value) = docs.get(key) {
+                        lines.push(format!("# {}", value));
+                        break;
+                    }
+                }
+            }
+            lines.push(format!("# {}", &line));
+        }
+
+        let mut combined = lines.join("\n");
+
+        // Add the short links and meta blurbs
+        let blurs = r#"
+# [Shortlinks]
+# Short map from a short link such as `lnk::bookarticle` to `/articles/book.html`
+# or `lnk::article2` to `https://example.com/article2.html`
+# article2 = "https://example.com/article2.html"
+# bookarticle = "/articles/book.html"
+
+# This is where you can add additional meta information.
+# they're available in all templates
+# [Meta]
+# twitter = "https://twitter.com/johndoe"
+        "#;
+        combined.push_str(blurs);
+        combined
     }
 }
 
@@ -451,7 +486,8 @@ mod tests {
 postsFolder = "jochen/"
 outputFolder = "franz/"
 "#;
-        let parsed = Config::toml(&contents, &std::path::PathBuf::from("/tmp/test.toml")).unwrap();
+        let parsed =
+            Config::from_toml(&contents, std::path::PathBuf::from("/tmp/test.toml")).unwrap();
         assert_eq!(parsed.folders.posts_folder, "jochen/");
     }
 
@@ -468,7 +504,8 @@ title = "klaus"
 feedAddress = "https://example.com"
 authorEmail = "example@example.com"
 "#;
-        let parsed = Config::toml(&contents, &std::path::PathBuf::from("/tmp/test.toml")).unwrap();
+        let parsed =
+            Config::from_toml(&contents, std::path::PathBuf::from("/tmp/test.toml")).unwrap();
         assert!(parsed.rss.is_some());
         assert_eq!(parsed.rss.unwrap().title, "klaus");
     }
@@ -476,11 +513,9 @@ authorEmail = "example@example.com"
     #[test]
     fn test_default_project_toml() {
         use crate::config::*;
-        let parsed = Config::toml(
-            &DEFAULT_PROJECT_TOML,
-            &std::path::PathBuf::from("/tmp/test.toml"),
-        )
-        .unwrap();
-        assert_eq!(parsed.project.keywords, vec!["nam", "nom", "grah"]);
+        let default = Config::example_config("/tmp/");
+        let parsed =
+            Config::from_toml(&default, std::path::PathBuf::from("/tmp/test.toml")).unwrap();
+        assert_eq!(parsed.project.base_url, "https://example.com");
     }
 }

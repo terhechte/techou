@@ -1,16 +1,20 @@
+use serde_json;
 use tera;
 use toml;
-use serde_json;
 
 use std::io;
 use std::result;
 
-
 #[derive(Debug)]
 pub enum TechouError {
-    IO { source: io::Error, context: String },
+    IO {
+        source: io::Error,
+        context: String,
+    },
 
-    FrontMatter { issue: String },
+    FrontMatter {
+        issue: String,
+    },
 
     Templating {
         source: tera::Error,
@@ -22,7 +26,14 @@ pub enum TechouError {
         context: String,
     },
 
-    Other { issue: String },
+    ConfigBuilding {
+        source: config::ConfigError,
+        context: String,
+    },
+
+    Other {
+        issue: String,
+    },
 
     JSON {
         source: serde_json::error::Error,
@@ -35,7 +46,6 @@ impl std::fmt::Display for TechouError {
         write!(f, "Some sort of error: {:?}", &self)
     }
 }
-
 
 pub type Result<T> = result::Result<T, TechouError>;
 
