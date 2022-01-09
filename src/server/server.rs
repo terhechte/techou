@@ -1,17 +1,14 @@
-use crossbeam::channel;
 use rouille;
-use rouille::websocket;
 use rouille::*;
 
 use crate::config::Config;
 
 use super::state::ServerState;
 use super::websocket_helper::websocket_handler;
-use super::{BrowserAction, BrowserResult};
+use super::BrowserResult;
 
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
-use std::thread;
+use std::sync::Arc;
 
 pub fn run_file_server(
     reload_receiver: Option<super::ReloadReceiver<BrowserResult>>,
@@ -30,7 +27,6 @@ pub fn run_file_server(
     );
 
     let state = Arc::new(ServerState {
-        receiver: reload_receiver.map(|e| Mutex::new(e)),
         websocket_payload: auto_reload_code(),
         serve_dir: PathBuf::from(folder),
     });
@@ -38,7 +34,11 @@ pub fn run_file_server(
     rouille::start_server(&config.server.server_address, move |request| {
         router!(request,
                 (GET) (/ws) => {
-                    websocket_handler(&request, Arc::clone(&state))
+                    if let Some(receiver) = &reload_receiver {
+                        websocket_handler(&request, receiver.clone())
+                    } else {
+                        rouille::Response::empty_204()
+                    }
                 },
                 _ => {
                     let path: PathBuf = match request.url().as_str() {

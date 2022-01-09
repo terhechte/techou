@@ -6,7 +6,6 @@ use crate::config::Config;
 
 use crate::server::BrowserAction;
 use crate::server::BrowserResult;
-use crossbeam::channel;
 use std::path;
 use std::path::PathBuf;
 use std::sync::mpsc;

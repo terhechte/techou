@@ -1,23 +1,20 @@
-use crossbeam::channel::Receiver;
 use rouille;
 use rouille::websocket;
-use rouille::*;
 
 use super::state::*;
 
-use std::sync::{Arc, Mutex};
 use std::thread;
 
 pub fn websocket_handler(
     request: &rouille::Request,
-    state: Arc<ServerState<BrowserResult>>,
+    receiver: super::ReloadReceiver<BrowserResult>,
 ) -> rouille::Response {
     println!("New websocket connection from {}", &request.remote_addr());
     let (response, websocket) = websocket::start(&request, Some("echo")).unwrap();
-    let websocket_state_clone = state.clone();
+    let cloned_receiver = receiver.clone();
     thread::spawn(move || {
         let ws = websocket.recv().unwrap();
-        websocket_handling_thread(ws, websocket_state_clone);
+        websocket_handling_thread(ws, cloned_receiver);
     });
 
     response
@@ -25,20 +22,12 @@ pub fn websocket_handler(
 
 fn websocket_handling_thread(
     mut websocket: websocket::Websocket,
-    state: Arc<ServerState<BrowserResult>>,
+    receiver: super::ReloadReceiver<BrowserResult>,
 ) {
-    println!("a");
-    let container = state.receiver.as_ref().unwrap();
-    println!("b");
-    let receiver = container.lock().unwrap();
-    println!("c");
     // Empty the socket welcome message
     if let Some(msg) = websocket.next() {
         println!("Websocket Connect: {:?}", &msg);
     }
-    println!("d");
-    // drain the current state
-    //let _v: Vec<_> = receiver.try_iter().collect();
     let mut counter = 0;
     loop {
         let msg = match receiver.try_recv() {
