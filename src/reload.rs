@@ -4,6 +4,9 @@ use notify::Watcher;
 
 use crate::config::Config;
 
+use crate::server::BrowserAction;
+use crate::server::BrowserResult;
+use crossbeam::channel;
 use std::path;
 use std::path::PathBuf;
 use std::sync::mpsc;
@@ -13,18 +16,20 @@ pub fn reload<ActionFn>(
     paths: Vec<path::PathBuf>,
     config: &Config,
     action: ActionFn,
-) -> mpsc::Receiver<bool>
+) -> crossbeam::channel::Receiver<BrowserResult>
 where
     ActionFn: Fn(&path::Path, &Config) + std::marker::Send + std::marker::Sync + 'static,
 {
-    let (reload_sender, reload_receiver) = mpsc::channel();
+    let (reload_sender, reload_receiver) = crossbeam::channel::unbounded();
     let inner_config = config.clone();
     let cloned_sender = reload_sender.clone();
     std::thread::spawn(move || {
         let cloned_sender = cloned_sender.clone();
         trigger_on_change(paths, move |path| {
             action(path, &inner_config);
-            cloned_sender.send(true).unwrap();
+            cloned_sender
+                .send(BrowserResult::Ok(BrowserAction::Reload))
+                .unwrap();
         });
     });
     reload_receiver

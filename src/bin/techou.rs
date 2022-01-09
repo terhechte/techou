@@ -110,7 +110,6 @@ fn main() {
 
     // If the server is on, the user is debugging, and we perform the auto reload
     config.server.auto_reload_browser_via_websocket_on_change = should_serve;
-    //config.project.fast_render = should_watch;
 
     if let Some(_matches) = matches.subcommand_matches("new") {
         techou::new_post::interactive(&config);

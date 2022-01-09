@@ -7,7 +7,6 @@ use crate::book::{Book, Chapter};
 use crate::error::*;
 use crate::io_utils::spit;
 use crate::list::*;
-use crate::server::auto_reload_code;
 use crate::filters;
 use crate::utils::slugify;
 
@@ -226,9 +225,6 @@ impl Templates {
             }
         })?;
         let rendered = self.tera.render(template_name, &context).ctx(path.as_ref())?;
-        //if config.server.auto_reload_browser_via_websocket_on_change {
-        //    rendered.push_str(&auto_reload_code(&config));
-        //}
         spit(path.as_ref(), &rendered)
     }
 }
