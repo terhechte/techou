@@ -1,4 +1,4 @@
-<img src="assets/logo.svg" />
+<img src="Design/logo.svg" />
 
 # techou [てちょう]
 
@@ -6,46 +6,43 @@
 
 ### A terrible static site generator
 
+Techou was the second Rust project I started, after the horribly failed [Wanderduene](https://github.com/terhechte/wanderduene/)
+static site generator in early 2018.
+
+Techou is a static site generator too, and you really shouldn't use it. The code is terrible, there's an impressive lack of tests,
+the structure is weird, and the features are very much made for my requirements. Also, did I mention that there's no documentation?
+
+I still use it for my own projects because the simplicity of the code allows me to quickly hack in features I need.
+
+I used to run techou for [Appventure.me](https://appventure.me) where it builds not just posts but also collections of posts (called books)
+such as [this book on Swift Keypaths](https://appventure.me/guides/keypaths/intro.html).
+
+### Features
+
+- Built in Javascript search via elasticlunr
+- Support for posts, pages, custom content and *books*.
+- Link resolver, so that `[lnk:my-page]` is resolved to the correct url (e.e. `/books/long-book/chapter3/my-page.html`).
+- Code syntax highlighting via syntect (or via Splash for Swift code)
+- A build cache to allow faster builds for complex sites
+- A build-in webserver with Websocket support. Techou scans any changes to your files (e.g. templates or posts) and if there's a change, it will tell the currently open browser to reload the current pages. This is great for editing
+- Support for custom metadata in the config
+- A commandline tool to create new projects or new posts (`techou new`)
+- Automatic generation of sidebars with chapter headers for easy navigation in sites.
+- RSS Feed generation
+- All this is pretty undocumented. The best way to understand how to use it is to read the [Configuration](src/config.rs) and to have a look at the [test site](site/) or the codebase for [appventure.me](https://github.com/terhechte/appventure)
+- It uses `Tera` as a templating language. I was too lazy to document all the template tags and variables. Look at the `site` or `appventure` again.
+
+### State
+
+This is/was my second proper Rust project. 
 
 I cobbled the initial version of `techou` together in a weekend and then spend a couple of weeks improving it on the side. It aims to be a very hackable static site generator with obvious and simple defaults.
 
-The idea is that a good collection of primitives should enable eager devs to compose a static site just to their liking. Currently, this is not really the case as I'm working on improving the abstractions.
+I'll continue hacking on this for my personal needs. The quality of everything is terrible though. I have no plans on cleaning it up.
 
-However, what it is right now is a very nice and kinda configurable static site generator.
+### Usage
 
-## Here's what it can do
-- By default, just generate a `html` folder from the project in the current folder (see below for default project setup)
-- If you need flexibility, run `techou create` which will create a `project.toml` in the current directory. This can be used to configure `techou`. (For more info, look into `config.rs`
-- A buildin development server (run techou via `techou -s`)
-- Auto-rebuild the site if a file changes (run techou via `techou -w`)
-- Auto-reload of the site in a browser (if it is currently open) when anything changes (via websockets)
-- A couple of useful Markdown extensions
-- A simple commandline tool `techou` with the ability to create a new post with the proper front matter `techou new`
-- Categorizes posts by year/month, tag, and keyword
-- Documents are written in markdown and contain a "front matter" that allows you to define settings
-- Support for additional documents that are not posts (pages)
-- Support for additional meta information in the document front-matter that canb e accessed from the template
-- A terrible sample project (see `site`)
-
-So, if you have a project in `project.toml` running it with auto-reload and server enabled, do:
-
-``` bash
-techou -f project.toml -ws
+``` sh
+techou -h
 ```
 
-More information will come. The project is still pretty much in development.
-
-
-
-## Open Tasks
-
-- [ ] if therr're rendering errors, end them via websocket to the browser, so that they can be displayed in a small dark bottom-bar in the rendered site...
-- [ ] if the terminal supports colors, use that
-- [ ] consider 'https://github.com/nathan/pax' to compress JS in release and the css-.. crate for compressing CSS
-- [ ] figure out error reporting now that some funcs went away from the executor, but we still want to continue building even if one page fails...
-- [ ] next / previous article
-- [ ] have a function to get a link to a different article (maybe by article id?, might need an article id)
-- [x] article recommendations
-# Long Term Future
-- [ ] use salsa to only re-render what has changed
-- [ ] some restructuring to make it easier usable as a library
