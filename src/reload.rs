@@ -25,7 +25,6 @@ where
         trigger_on_change(paths, move |path| {
             action(path, &inner_config);
             cloned_sender.send(true).unwrap();
-            println!("Done");
         });
     });
     reload_receiver

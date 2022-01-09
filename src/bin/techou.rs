@@ -110,16 +110,16 @@ fn main() {
 
     // If the server is on, the user is debugging, and we perform the auto reload
     config.server.auto_reload_browser_via_websocket_on_change = should_serve;
-    config.project.fast_render = should_watch;
+    //config.project.fast_render = should_watch;
 
     if let Some(_matches) = matches.subcommand_matches("new") {
         techou::new_post::interactive(&config);
     }
 
     let cache = techou::build_cache::BuildCache::new("buildcache.techou");
-    let load_fn = move |_path: &path::Path, config: &techou::config::Config| {
+    let load_fn = move |path: &path::Path, config: &techou::config::Config| {
         let cache_clone = cache.clone();
-        match techou::executor::execute(false, &config, &cache_clone) {
+        match techou::executor::execute(false, &config, &cache_clone, Some(path)) {
             Err(e) => println!("Error: {:?}", &e),
             _ => (),
         };

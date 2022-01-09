@@ -1,3 +1,5 @@
+use std::fs::create_dir_all;
+
 use rayon::prelude::*;
 
 use crate::book::Book;
@@ -6,7 +8,7 @@ use crate::builder;
 use crate::config::Config;
 use crate::document::{documents_in_folder, Document};
 use crate::document_operations::*;
-use crate::error::Result;
+use crate::error::{Result, ResultContext};
 use crate::feeds;
 use crate::io_utils::*;
 use crate::list::*;
@@ -15,21 +17,38 @@ use crate::sitemap::SiteMap;
 use crate::template::Templates;
 use crate::utils::DebugTimer;
 
-pub fn execute(_ignore_errors: bool, config: &Config, cache: &BuildCache) -> Result<()> {
-    catchable_execute(&config, &cache)
+pub fn execute(
+    _ignore_errors: bool,
+    config: &Config,
+    cache: &BuildCache,
+    triggered_by_change: Option<&std::path::Path>,
+) -> Result<()> {
+    catchable_execute(&config, &cache, triggered_by_change)
         .map_err(|e| println!("Error: {}", &e))
         .unwrap();
     Ok(())
 }
 
-fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
+fn catchable_execute(
+    config: &Config,
+    cache: &BuildCache,
+    triggered_by_change: Option<&std::path::Path>,
+) -> Result<()> {
     let mut timer = DebugTimer::begin(0, &config);
-    // Clean the old output folder, if it still exists.
-    // We don't want to remove the folder, so that static servers still work
-    if !config.project.fast_render {
-        clear_directory(&config.folders.output_folder_path())?;
+
+    let output_folder = config.folders.output_folder_path();
+
+    // If the directory doesn't exist yet, create it
+    if !output_folder.exists() {
+        create_dir_all(&output_folder).map_err(|e| crate::error::TechouError::Other {
+            issue: format!(
+                "Could not create '{}' folder: {:?}",
+                &config.folders.output_folder_path().display(),
+                &e
+            ),
+        })?;
+        println!("Create output folder: {}", &output_folder.display());
     }
-    timer.sub_step("Clean");
 
     // create a search engine
     let mut searcher = Searcher::new(&config);
@@ -42,6 +61,16 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
         &cache,
     )?;
     timer.sub_step("Posts");
+
+    // If there was a change to one of the templates (e.g. any .html in the public folder)
+    // mark all documents as updated so they're all rendered again
+    if let Some(Some(f)) = triggered_by_change.map(|e| e.as_os_str().to_str()) {
+        if f.contains(&config.folders.public_folder) && f.contains("html") {
+            for post in posts.iter_mut() {
+                post.updated = true
+            }
+        }
+    }
 
     posts.sort_by(|a1, a2| {
         a2.info
@@ -187,14 +216,14 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
         title_fn,
         "",
     )?;
-    timer.sub_step("Write Indexses");
+    timer.sub_step("Write Indexes");
 
     // Write the feed
     if !config.project.fast_render {
         if let Some(rss) = &config.rss {
             feeds::write_posts_rss(
                 &posts,
-                &config.folders.output_folder_path().join("feed.rss"),
+                &output_folder.join("feed.rss"),
                 &rss,
                 &config.project.base_url,
             )?;
@@ -206,24 +235,24 @@ fn catchable_execute(config: &Config, cache: &BuildCache) -> Result<()> {
     copy_items_to_directory(
         &config.folders.public_copy_folders,
         &config.folders.public_folder_path(),
-        &config.folders.output_folder_path(),
+        &output_folder,
     )?;
     timer.sub_step("Write Assets");
 
     // Write the search index
     if config.search.enable && !config.project.fast_render {
         let search_contents = searcher.finalize()?;
-        let search_index_output_path = config
-            .folders
-            .output_folder_path()
-            .join(&config.search.search_index_file);
+        let search_index_output_path = output_folder.join(&config.search.search_index_file);
         spit(search_index_output_path, &search_contents)?;
         timer.sub_step("Write Search");
     }
 
     // create a site map
     if !config.project.base_url.is_empty() && !config.project.fast_render {
-        let outfile = config.folders.output_folder_path().join("sitemap.xml");
+        let outfile = output_folder.join("sitemap.xml");
+        if outfile.exists() {
+            std::fs::remove_file(&outfile).ctx("Delete sitemap")?;
+        }
         let mut sitemap = SiteMap::new(outfile, &config.project.base_url);
         for post in &all_posts {
             sitemap.add_document(&post);

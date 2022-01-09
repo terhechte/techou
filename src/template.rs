@@ -71,7 +71,10 @@ impl Templates {
         let folder_path = directory
             .as_ref()
             .to_str()
-            .expect("Could not find template folder");
+            .expect("Could not find template folder")
+            .to_owned()
+            // Not sure why, but tera doesn't load template paths begining with `./`
+            .replace("./", "");
         let mut tera = Tera::new(&format!("{}/*.html", folder_path)).ctx(&folder_path)?;
         // We don't want to escape content. After all, this is a static engine
         tera.autoescape_on(vec![]);

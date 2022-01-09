@@ -144,7 +144,7 @@ impl<'a> Builder<'a> {
                 &path,
                 &self.config,
             ) {
-                Ok(_) => (), /*println!("Wrote index: {:?}", &path)*/
+                Ok(_) => (),
                 Err(e) => println!("Could not write index {:?}: {:?}", &path, &e),
             }
             state.1 = Some(Page {
