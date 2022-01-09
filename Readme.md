@@ -1,14 +1,11 @@
-# techou
+<img src="assets/logo.svg" />
 
-[  手帳  ]
-[--------]
-[てちょう]
-[--------]
-[ techou ]
+# techou [てちょう]
 
-[notebook, memo pad, (pocket) diary]
+## Notebook, Memo pad, (pocket) diary
 
-## [WIP] A Hackable Static Site Generator
+### A terrible static site generator
+
 
 I cobbled the initial version of `techou` together in a weekend and then spend a couple of weeks improving it on the side. It aims to be a very hackable static site generator with obvious and simple defaults.
 
