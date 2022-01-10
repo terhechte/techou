@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 fn main() {
     let matches = App::new("techou")
-        .version("0.0.1")
+        .version(env!("CARGO_PKG_VERSION"))
         .author("Benedikt Terhechte")
         .arg(
             Arg::new("project-dir")
@@ -118,7 +118,8 @@ fn main() {
     let cache = techou::build_cache::BuildCache::new("buildcache.techou");
     let load_fn = move |path: &path::Path, config: &techou::config::Config| {
         let cache_clone = cache.clone();
-        match techou::executor::execute(false, &config, &cache_clone, Some(path)) {
+        let watch_or_serve = should_watch || should_serve;
+        match techou::executor::execute(&config, &cache_clone, watch_or_serve, Some(path)) {
             Err(e) => println!("Error: {:?}", &e),
             _ => (),
         };

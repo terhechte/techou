@@ -22,6 +22,14 @@ where
     let (reload_sender, reload_receiver) = crossbeam::channel::unbounded();
     let inner_config = config.clone();
     let cloned_sender = reload_sender.clone();
+
+    if !paths.is_empty() {
+        println!("Observing changes in the following files/folders:");
+        for path in paths.iter() {
+            println!("  {}", path.display());
+        }
+    }
+
     std::thread::spawn(move || {
         let cloned_sender = cloned_sender.clone();
         trigger_on_change(paths, move |path| {

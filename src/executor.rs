@@ -18,12 +18,12 @@ use crate::template::Templates;
 use crate::utils::DebugTimer;
 
 pub fn execute(
-    _ignore_errors: bool,
     config: &Config,
     cache: &BuildCache,
+    watch_or_serve: bool,
     triggered_by_change: Option<&std::path::Path>,
 ) -> Result<()> {
-    catchable_execute(&config, &cache, triggered_by_change)
+    catchable_execute(&config, &cache, watch_or_serve, triggered_by_change)
         .map_err(|e| println!("Error: {}", &e))
         .unwrap();
     Ok(())
@@ -32,11 +32,21 @@ pub fn execute(
 fn catchable_execute(
     config: &Config,
     cache: &BuildCache,
+    watch_or_serve: bool,
     triggered_by_change: Option<&std::path::Path>,
 ) -> Result<()> {
     let mut timer = DebugTimer::begin(0, &config);
 
     let output_folder = config.folders.output_folder_path();
+
+    // if we're not watching or serving, clear
+    if !watch_or_serve {
+        println!(
+            "Detected Production build (no watch or serve). Clearing {}",
+            output_folder.display()
+        );
+        std::fs::remove_dir_all(&output_folder).unwrap();
+    }
 
     // If the directory doesn't exist yet, create it
     if !output_folder.exists() {
@@ -63,11 +73,23 @@ fn catchable_execute(
     timer.sub_step("Posts");
 
     // If there was a change to one of the templates (e.g. any .html in the public folder)
-    // mark all documents as updated so they're all rendered again
+    // mark all documents as updated so they're all rendered again.
     if let Some(Some(f)) = triggered_by_change.map(|e| e.as_os_str().to_str()) {
         if f.contains(&config.folders.public_folder) && f.contains("html") {
             for post in posts.iter_mut() {
                 post.updated = true
+            }
+        }
+
+        // Also, if there was a change in one of the copy folders, force copy them again.
+        // This is all a bit too simple
+        for folder in &config.folders.public_copy_folders {
+            let combined = format!("{}/{}", &config.folders.public_folder, folder);
+            if f.contains(&combined) {
+                let path = &config.folders.output_folder_path().join(&folder);
+                println!("Detected change in {}. Clearing {}", &f, path.display());
+                crate::io_utils::clear_directory(path)?;
+                std::fs::remove_dir(path).unwrap();
             }
         }
     }

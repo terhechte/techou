@@ -105,7 +105,7 @@ pub fn copy_items_to_directory<A: AsRef<Path>>(
             continue;
         };
         let target = to_dir.as_ref().join(entry);
-        //println!("copy '{:?}' to '{:?}'", &source, &target);
+        println!("copy '{:?}' to '{:?}'", &source, &target);
         // We copy each item seperately, so we can see when it fails
         match copy_dir(&source, &target) {
             Ok(ref e) if !e.is_empty() => {

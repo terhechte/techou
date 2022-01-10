@@ -74,6 +74,7 @@ impl<'a> EventHandler for LinksEventHandler<'a> {
                         return false;
                     } else {
                         println!("Could not find short-link for tag {}", &tag);
+                        dbg!(&self.link_database);
                         return true;
                     }
                 }
