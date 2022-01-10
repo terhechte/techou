@@ -80,7 +80,6 @@ pub fn documents_by_similarity<'a, D: AsRef<Document>>(
     // rudimentary implementation. I can think of tons of better ways but we're trying
     // to finish this thing.
     use std::collections::HashSet;
-    use std::iter::FromIterator;
     use strsim::normalized_damerau_levenshtein;
     let mut items = HashSet::new();
     let max_tags: usize = 10; // if we have more than 10 matches, we have a winner

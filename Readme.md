@@ -30,6 +30,7 @@ such as [this book on Swift Keypaths](https://appventure.me/guides/keypaths/intr
 - Automatic generation of sidebars with chapter headers for easy navigation in sites.
 - RSS Feed generation
 - All this is pretty undocumented. The best way to understand how to use it is to read the [Configuration](src/config.rs) and to have a look at the [test site](site/) or the codebase for [appventure.me](https://github.com/terhechte/appventure)
+- use `normalized_damerau_levenshtein` to find similar content for posts.
 - It uses `Tera` as a templating language. I was too lazy to document all the template tags and variables. Look at the `site` or `appventure` again.
 
 ### State

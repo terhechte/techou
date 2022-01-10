@@ -1,0 +1,11 @@
+[target.x86_64-apple-darwin]
+rustflags = ["-C", "link-arg=-fuse-ld=/opt/homebrew/bin/zld"]
+
+[target.aarch64-apple-darwin]
+rustflags = ["-C", "link-arg=-fuse-ld=/opt/homebrew/bin/zld"]
+
+[profile.dev]
+split-debuginfo = 'unpacked'
+
+[profile.test]
+split-debuginfo = 'unpacked'

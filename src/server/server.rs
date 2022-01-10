@@ -27,7 +27,12 @@ pub fn run_file_server(
     );
 
     let state = Arc::new(ServerState {
-        websocket_payload: auto_reload_code(),
+        // We only insert the websocket code if we're watching
+        websocket_payload: if reload_receiver.is_some() {
+            auto_reload_code()
+        } else {
+            "".to_owned()
+        },
         serve_dir: PathBuf::from(folder),
     });
 
