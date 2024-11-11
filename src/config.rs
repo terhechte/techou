@@ -66,6 +66,9 @@ pub struct ConfigRenderer {
     /// The filename will be `buildcache.techou`
     #[serde(default)]
     pub store_build_cache: bool,
+    // FIXME: Currently unused because it has to be static in syntect
+    #[serde(default)]
+    pub highlight_prefix: String,
 }
 
 impl Default for ConfigRenderer {
@@ -80,6 +83,7 @@ impl Default for ConfigRenderer {
             section_header_identifier_template: "<span id=\"{identifier}-{number}\"></span>"
                 .to_owned(),
             store_build_cache: true,
+            highlight_prefix: "techou".to_string(),
         }
     }
 }
@@ -122,6 +126,8 @@ pub struct ConfigFolders {
     pub pages_folder_name: String,
     #[serde(default)]
     pub books_folder_name: String,
+    #[serde(default)]
+    pub years_folder_name: String,
 }
 
 impl ConfigFolders {
@@ -188,6 +194,7 @@ impl Default for ConfigFolders {
             tags_folder_name: "tags".to_string(),
             keywords_folder_name: "keywords".to_string(),
             category_folder_name: "category".to_string(),
+            years_folder_name: "years".to_string(),
         }
     }
 }
@@ -205,6 +212,8 @@ pub struct ConfigTemplates {
     pub book_template: String,
     #[serde(default)]
     pub chapter_template: String,
+    #[serde(default)]
+    pub year_template: String,
 }
 
 impl Default for ConfigTemplates {
@@ -215,6 +224,7 @@ impl Default for ConfigTemplates {
             list_template: "list.html".to_string(),
             book_template: "book.html".to_string(),
             chapter_template: "chapter.html".to_string(),
+            year_template: "year.html".to_string(),
         }
     }
 }

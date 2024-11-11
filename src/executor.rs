@@ -60,26 +60,11 @@ fn catchable_execute(
         println!("Create output folder: {}", &output_folder.display());
     }
 
-    // create a search engine
-    let mut searcher = Searcher::new(&config);
-
-    println!("Root folder: {:?}", &config.folders.root);
-    let mut posts = documents_in_folder(
-        &config.folders.posts_folder_path(),
-        &config.folders.posts_folder_name,
-        &config,
-        &cache,
-    )?;
-    timer.sub_step("Posts");
-
+    let mut mutated_templates = false;
     // If there was a change to one of the templates (e.g. any .html in the public folder)
     // mark all documents as updated so they're all rendered again.
     if let Some(Some(f)) = triggered_by_change.map(|e| e.as_os_str().to_str()) {
-        if f.contains(&config.folders.public_folder) && f.contains("html") {
-            for post in posts.iter_mut() {
-                post.updated = true
-            }
-        }
+        mutated_templates = f.contains(&config.folders.public_folder) && f.contains("html");
 
         // Also, if there was a change in one of the copy folders, force copy them again.
         // This is all a bit too simple
@@ -93,6 +78,19 @@ fn catchable_execute(
             }
         }
     }
+
+    // create a search engine
+    let mut searcher = Searcher::new(&config);
+
+    println!("Root folder: {:?}", &config.folders.root);
+    let mut posts = documents_in_folder(
+        &config.folders.posts_folder_path(),
+        &config.folders.posts_folder_name,
+        &config,
+        &cache,
+        mutated_templates,
+    )?;
+    timer.sub_step("Posts");
 
     posts.sort_by(|a1, a2| {
         a2.info
@@ -129,6 +127,7 @@ fn catchable_execute(
         &config.folders.pages_folder_name,
         &config,
         &cache,
+        mutated_templates,
     )?;
 
     timer.sub_step("Load Pages");
@@ -145,13 +144,15 @@ fn catchable_execute(
         .folders
         .books
         .par_iter()
-        .filter_map(|filename| match Book::new(&filename, &config, &cache) {
-            Ok(book) => Some(book),
-            Err(e) => {
-                println!("Error generating book {}: {}", &filename, &e);
-                None
-            }
-        })
+        .filter_map(
+            |filename| match Book::new(&filename, &config, &cache, mutated_templates) {
+                Ok(book) => Some(book),
+                Err(e) => {
+                    println!("Error generating book {}: {}", &filename, &e);
+                    None
+                }
+            },
+        )
         .collect();
 
     timer.sub_step("Books");
@@ -179,7 +180,8 @@ fn catchable_execute(
     }
     timer.sub_step("Recursive Books");
     //let by_tag = posts_by_array(&posts, |p| &p.info.tags);
-    let by_tag = posts_by_array(&all_posts, |p| &p.info.tags);
+    let mut by_tag = posts_by_array(&all_posts, |p| &p.info.tags);
+    by_tag.sort_by(|a, b| a.name.cmp(&b.name));
     timer.sub_step("All Posts");
 
     if config.search.enable && !config.project.fast_render {
@@ -222,6 +224,10 @@ fn catchable_execute(
     if !config.project.fast_render {
         builder.category(&by_category, &config.folders.category_folder_name)?;
         timer.sub_step("Write Categories");
+    }
+    if !config.project.fast_render {
+        builder.years(&by_year, &config.folders.years_folder_name)?;
+        timer.sub_step("Write Years");
     }
 
     // Write the indexed pages

@@ -7,6 +7,7 @@ use crate::document::Document;
 pub struct Year<'a> {
     pub name: i32,
     pub months: Vec<Month<'a>>,
+    pub count: i32,
 }
 
 #[derive(Serialize, Debug)]
@@ -26,6 +27,7 @@ impl<'a> From<(i32, Vec<Month<'a>>)> for Year<'a> {
     fn from(entry: (i32, Vec<Month<'a>>)) -> Self {
         Year {
             name: entry.0,
+            count: entry.1.iter().map(|e| e.posts.len() as i32).sum(),
             months: entry.1,
         }
     }
@@ -56,6 +58,7 @@ pub struct DocumentContext<'a> {
 pub enum ListType {
     Index,
     Category,
+    Year,
 }
 
 #[derive(Serialize, Debug, Clone)]

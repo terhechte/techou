@@ -81,6 +81,8 @@ pub struct FrontMatter {
     // Should this document be included in the search index?
     #[serde(default = "default_true")]
     pub indexed: bool,
+    #[serde(default)]
+    pub limit_parsed_sections: Option<usize>,
 }
 
 impl FrontMatter {
@@ -134,7 +136,14 @@ pub fn parse_front_matter<'a, A: AsRef<Path>>(
     let ParseResult {
         content,
         sections: _,
-    } = markdown_to_html(&front_matter.description, "", &None, None, &config.render);
+    } = markdown_to_html(
+        &front_matter.description,
+        "",
+        &None,
+        None,
+        &config.render,
+        front_matter.limit_parsed_sections,
+    );
     front_matter.description_html = content;
 
     Ok((front_matter, article))

@@ -25,6 +25,7 @@ impl Book {
         file: A,
         config: &Config,
         cache: &crate::build_cache::BuildCache,
+        force_update: bool,
     ) -> Result<Book> {
         let mut timer = DebugTimer::begin(1, &config);
 
@@ -47,8 +48,8 @@ impl Book {
         let base_folder_string = folder.to_str().unwrap();
         let chapters: Vec<Chapter> = chapter_info
             .into_par_iter()
-            .filter_map(
-                |c| match c.convert(&base_folder_string, &config, &cache.clone()) {
+            .filter_map(|c| {
+                match c.convert(&base_folder_string, &config, &cache.clone(), force_update) {
                     Ok(s) => {
                         if s.document.info.published == false {
                             return None;
@@ -59,8 +60,8 @@ impl Book {
                         println!("{:?}", &e);
                         None
                     }
-                },
-            )
+                }
+            })
             .collect();
         timer.sub_step("finish convert");
         // A book needs chapters
@@ -119,7 +120,7 @@ impl Book {
     pub fn as_one_document(&self, cache: &crate::build_cache::BuildCache) -> Document {
         let mut buffer: String = String::new();
         let mut sections: Vec<(String, String)> = Vec::new();
-        Book::recursive_add(&self.chapters, &mut buffer, &mut sections);
+        Book::recursive_add(&self.chapters, &mut buffer, &mut sections, None, 0);
 
         let slug_path = PathBuf::from(&self.slug);
         let parent = slug_path.parent().expect("Expect a parent for a book");
@@ -144,6 +145,8 @@ impl Book {
         chapters: &Vec<Chapter>,
         into_buffer: &mut String,
         sections: &mut Vec<(String, String)>,
+        maximum_levels: Option<usize>,
+        current_level: usize,
     ) {
         //let mut counter = 1;
         for chapter in chapters.iter() {
@@ -155,7 +158,13 @@ impl Book {
             let mut cloned = chapter.document.sections.clone();
             sections.append(&mut cloned);
             if !chapter.sub_chapters.is_empty() {
-                Book::recursive_add(&chapter.sub_chapters, into_buffer, sections);
+                Book::recursive_add(
+                    &chapter.sub_chapters,
+                    into_buffer,
+                    sections,
+                    maximum_levels,
+                    current_level + 1,
+                );
             }
         }
     }
@@ -206,6 +215,7 @@ impl ChapterInfo {
         in_folder: &str,
         config: &Config,
         cache: &crate::build_cache::BuildCache,
+        force_update: bool,
     ) -> Result<Chapter> {
         let contents = slurp(&self.file_url)?;
 
@@ -213,7 +223,7 @@ impl ChapterInfo {
         let clone = cache.clone();
         let mut doc = match clone.get_item(cache_key, &contents) {
             Some(mut e) => {
-                e.updated = false;
+                e.updated = force_update;
                 e
             }
             None => {
@@ -227,18 +237,20 @@ impl ChapterInfo {
         let chapters: Vec<Chapter> = self
             .sub_chapters
             .into_par_iter()
-            .filter_map(|c| match c.convert(&in_folder, &config, &cache.clone()) {
-                Ok(s) => {
-                    if s.document.info.published == false {
-                        return None;
+            .filter_map(
+                |c| match c.convert(&in_folder, &config, &cache.clone(), force_update) {
+                    Ok(s) => {
+                        if s.document.info.published == false {
+                            return None;
+                        }
+                        Some(s)
                     }
-                    Some(s)
-                }
-                Err(e) => {
-                    println!("{:?}", &e);
-                    None
-                }
-            })
+                    Err(e) => {
+                        println!("{:?}", &e);
+                        None
+                    }
+                },
+            )
             .collect();
         Ok(Chapter {
             name: self.name,

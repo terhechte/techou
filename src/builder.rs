@@ -115,6 +115,8 @@ impl<'a> Builder<'a> {
         let mut state: (Option<Page>, Option<Page>) = (None, None);
         let mut iter = posts.chunks(per_page).enumerate().peekable();
         while let Some((index, chunk)) = iter.next() {
+            println!("Index {index}. Chunk liength {}", chunk.len());
+            // dbg!(&index, chunk);
             let (filename, title) = make_title(index);
 
             let (_, future_title) = make_title(index + 1);
@@ -122,7 +124,7 @@ impl<'a> Builder<'a> {
                 title: future_title,
                 index: *index,
                 items: chunk.len(),
-                path: filename.clone(),
+                path: make_title(*index).0,
             });
 
             let pagination = Pagination {
@@ -142,7 +144,7 @@ impl<'a> Builder<'a> {
                     list_type: ListType::Index,
                 },
                 &path,
-                &self.config,
+                self.config,
             ) {
                 Ok(_) => (),
                 Err(e) => println!("Could not write index {:?}: {:?}", &path, &e),
@@ -151,7 +153,7 @@ impl<'a> Builder<'a> {
                 title,
                 index,
                 items: chunk.len(),
-                path: filename.clone(),
+                path: make_title(index).0,
             });
         }
         Ok(())
@@ -181,6 +183,42 @@ impl<'a> Builder<'a> {
                 },
                 &path,
                 &self.config,
+            ) {
+                Ok(_) => (), /*println!("Wrote tag index: {:?}", &path)*/
+                Err(e) => println!("Could not write index {:?}: {:?}", &path, &e),
+            };
+        }
+        Ok(())
+    }
+
+    /// Write out documents for each category with the articles for that name
+    pub fn years<A: AsRef<Path>>(&self, year_posts: &[Year<'a>], folder: A) -> Result<()> {
+        let folder = self
+            .config
+            .folders
+            .output_folder_path()
+            .join(folder.as_ref());
+        for year in year_posts {
+            let slug = format!("{}.html", &year.name);
+            let path = folder.join(&slug);
+            let mut posts: Vec<&Document> = Vec::new();
+            for x in year.months.iter() {
+                posts.extend(&x.posts);
+            }
+            match self.template_writer.write_year(
+                &self.context,
+                &List {
+                    title: &format!("{}", year.name),
+                    posts: posts.as_slice(),
+                    pagination: Pagination {
+                        current: 0,
+                        next: None,
+                        previous: None,
+                    },
+                    list_type: ListType::Category,
+                },
+                &path,
+                self.config,
             ) {
                 Ok(_) => (), /*println!("Wrote tag index: {:?}", &path)*/
                 Err(e) => println!("Could not write index {:?}: {:?}", &path, &e),

@@ -1,6 +1,7 @@
 use super::*;
 use std::collections::HashMap;
 
+use crate::utils;
 use pulldown_cmark::CowStr;
 use std::borrow::Cow;
 
@@ -13,6 +14,7 @@ enum LinkType<'a> {
     Link,
     ShortLink(Cow<'a, str>),
     RelLink(Cow<'a, str>),
+    Id(Cow<'a, str>, Cow<'a, str>),
 }
 
 impl<'a> LinksEventHandler<'a> {
@@ -29,7 +31,7 @@ impl<'a> LinksEventHandler<'a> {
     fn detect_link_type(link: &'a CowStr) -> LinkType<'a> {
         let items: Vec<&str> = link.split("::").collect();
         // a normal link
-        if items.len() != 2 {
+        if items.len() < 2 {
             return LinkType::Link;
         }
         if items[0].len() > 3 {
@@ -38,6 +40,9 @@ impl<'a> LinksEventHandler<'a> {
         match items[0] {
             "lnk" => return LinkType::ShortLink(Cow::Borrowed(items[1])),
             "rel" => return LinkType::RelLink(Cow::Borrowed(items[1])),
+            "id" if items.len() == 3 => {
+                return LinkType::Id(Cow::Borrowed(items[1]), Cow::Borrowed(items[2]))
+            }
             _ => return LinkType::Link,
         }
     }
@@ -53,13 +58,22 @@ impl<'a> EventHandler for LinksEventHandler<'a> {
     ) -> bool {
         match event {
             Event::Start(Tag::Link(a, b, c)) => match LinksEventHandler::detect_link_type(b) {
-                LinkType::Link => return true,
+                LinkType::Link => true,
                 LinkType::RelLink(tag) => {
                     let base = self.base_folder.unwrap_or_default();
                     let full_path = format!("/{}/{}", &base, &tag.replace(".md", ".html"));
                     events.push(Event::Start(Tag::Link(
                         a.clone(),
                         CowStr::Boxed(full_path.into_boxed_str()),
+                        CowStr::Boxed(c.clone().into_string().into_boxed_str()),
+                    )));
+                    return false;
+                }
+                LinkType::Id(tag, i) => {
+                    let hashed = utils::hash_string(&tag, 8);
+                    events.push(Event::Start(Tag::Link(
+                        a.clone(),
+                        CowStr::Boxed(format!("#{hashed}-{i}").into_boxed_str()),
                         CowStr::Boxed(c.clone().into_string().into_boxed_str()),
                     )));
                     return false;

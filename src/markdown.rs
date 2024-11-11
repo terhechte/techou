@@ -15,6 +15,7 @@ pub fn markdown_to_html(
     links: &Option<HashMap<String, String>>,
     book_html_root: Option<&str>,
     config: &ConfigRenderer,
+    limit_parsed_sections: Option<usize>,
 ) -> ParseResult {
     let default_hashmap: HashMap<String, String> = HashMap::new();
     let mut opts = Options::empty();
@@ -38,6 +39,7 @@ pub fn markdown_to_html(
         handlers.push(Box::new(SectionEventHandler::new(
             section_identifier,
             &config.section_header_identifier_template,
+            limit_parsed_sections,
         )));
     }
 

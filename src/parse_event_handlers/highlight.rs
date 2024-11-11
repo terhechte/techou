@@ -29,22 +29,26 @@ impl HighlightEventHandler {
     }
 
     fn non_swift_code(&self) -> (String, String) {
-        let syntax = match self.syntax_set.find_syntax_by_name(&self.language) {
+        let mut lng = self.language.clone();
+        if lng == "Swift" || lng == "swift" {
+            lng = "Rust".to_string();
+        }
+        let syntax = match self.syntax_set.find_syntax_by_name(&lng) {
             Some(s) => s,
-            None => match self.syntax_set.find_syntax_by_extension(&self.language) {
+            None => match self.syntax_set.find_syntax_by_extension(&lng) {
                 Some(s) => s,
                 None => self.syntax_set.find_syntax_plain_text(),
             },
         };
 
         let mut html_generator = ClassedHTMLGenerator::new_with_class_style(
-            &syntax,
+            syntax,
             &self.syntax_set,
-            syntect::html::ClassStyle::SpacedPrefixed { prefix: "techou" },
+            syntect::html::ClassStyle::SpacedPrefixed { prefix: "" },
         );
         let lines = LinesWithEndings::from(&self.current_code);
         for line in lines {
-            html_generator.parse_html_for_line_which_includes_newline(&line);
+            html_generator.parse_html_for_line_which_includes_newline(line);
         }
         (syntax.name.clone(), html_generator.finalize())
     }
@@ -91,7 +95,7 @@ impl EventHandler for HighlightEventHandler {
                 return false;
             }
             Event::Text(ref text) if self.next_text_is_code => {
-                self.current_code.push_str(&text);
+                self.current_code.push_str(text);
                 return false;
             }
             Event::End(Tag::CodeBlock(_)) => {

@@ -8,7 +8,7 @@ use crate::error::*;
 use crate::io_utils::spit;
 use crate::list::*;
 use crate::filters;
-use crate::utils::slugify;
+use crate::utils::{slugify, hash_string};
 
 use std::path::Path;
 use std::collections::{HashMap, BTreeMap};
@@ -38,6 +38,21 @@ impl tera::Function for UrlMaker {
             None => return Err(tera::Error::msg(format!("No entity with id `{}` in {}", &id, &self.context)))
         };
         tera::to_value(entry).map_err(|e| e.into())
+    }
+}
+
+struct IdentifierHash;
+impl tera::Function for IdentifierHash {
+    fn call(&self, args: &HashMap<String, tera::Value>) -> tera::Result<tera::Value> {
+        let filename = match args.get("filename") {
+            Some(val) => match tera::from_value::<String>(val.clone()) {
+                Ok(v) =>  v,
+                Err(_) => return Err(tera::Error::msg("Parameter not found")),
+            },
+            None => return Err(tera::Error::msg("Parameter not found")),
+        };
+        tera::Result::Ok(tera::Value::String(hash_string(&filename,  8)))
+        
     }
 }
 
@@ -109,6 +124,11 @@ impl Templates {
         let category_urls: std::collections::BTreeMap<String, String> = context.by_category.iter()
             .map(|t| (t.name.to_string(), format!("/{}/{}.html", config.folders.category_folder_name, &slugify(&t.name)))).collect();
         self.tera.register_function("url_category", UrlMaker::new(category_urls, "url_category"));
+
+        fn identifier_hash(i: &str) -> String {
+            hash_string(i,  8)
+        }
+        self.tera.register_function("identifier_hash", IdentifierHash);
 
         let mut book_urls: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
         let mut chapter_urls: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
@@ -208,6 +228,24 @@ impl Templates {
             content: list,
         };
         self.write_item(&config.templates.list_template, &item, path, config)
+    }
+
+    pub fn write_year<'a, A: AsRef<Path>, D: AsRef<Document>>(
+        &self,
+        context: &DocumentContext<'a>,
+        list: &'a List<'a, D>,
+        path: A,
+        config: &Config,
+    ) -> Result<()>
+    where
+        D: Serialize,
+    {
+        let item = TemplateContext {
+            config,
+            context,
+            content: list,
+        };
+        self.write_item(&config.templates.year_template, &item, path, config)
     }
 
     fn write_item<'a, A: AsRef<Path>, I: Serialize>(

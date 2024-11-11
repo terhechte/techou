@@ -67,6 +67,7 @@ impl Document {
             &config.short_links,
             formatted_root.as_ref().map(String::as_str),
             &config.render,
+            info.limit_parsed_sections,
         );
         let sections = sections
             .into_iter()
@@ -127,6 +128,7 @@ pub fn documents_in_folder<A: AsRef<Path>>(
     base: &str,
     config: &Config,
     cache: &crate::build_cache::BuildCache,
+    force_update: bool,
 ) -> Result<Vec<Document>> {
     use crate::io_utils::{contents_of_directory, slurp};
     let files = contents_of_directory(folder.as_ref(), "md")?;
@@ -144,7 +146,7 @@ pub fn documents_in_folder<A: AsRef<Path>>(
             let clone = cache.clone();
             let cache_key = &path.to_str().unwrap();
             if let Some(mut existing) = clone.get_item(cache_key, &contents) {
-                existing.updated = false;
+                existing.updated = force_update;
                 return Some(existing);
             }
 
